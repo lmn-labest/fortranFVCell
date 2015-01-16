@@ -1,0 +1,14 @@
+      real*8 underU,underP,underPc,underRo,cPc0,cPc
+      real*8 g(3),massa0,massa,fluxoM
+      real*8 solvSimpleU1,solvSimpleU2,solvSimplePc,solvEnergy
+      integer intVel,maxItSimple
+      logical simpleC,simpleR,vMass,sPressure,singularPressure
+     .       ,tDinamico,bBodyPressure,closed,skewnessCorrection
+      common /simple_/underU,underP,underPc,underRo,g
+     .               ,solvSimpleU1,solvSimpleU2
+     .               ,solvSimplePc,solvEnergy,cPc0,cPc
+     .               ,massa0,massa,fluxoM
+     .               ,intVel,maxItSimple,simpleC,simpleR
+     .               ,singularPressure,vMass,tDinamico,sPressure
+     .               ,bBodyPressure,closed,skewnessCorrection
+ 

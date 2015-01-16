@@ -1,0 +1,17 @@
+c*****************************Svn***************************************      
+c*$Date: 2010-09-06 18:52:24 -0300 (Mon, 06 Sep 2010) $                 
+c*$Rev: 847 $                                                           
+c*$Author: henrique $                                                   
+c***********************************************************************  
+c **********************************************************************
+c *                                                                    *
+c *    maxstrl - tamanho maximo de uma palavra chave                   *
+c *    strl    - tamanho da palavra lida                               *
+c *    word    - palavra lida                                          *
+c *    line_col- ponteiro da linha lida                                *
+c *                                                                    *
+c **********************************************************************
+      integer maxstrl,strl,line_col
+      parameter (maxstrl  = 200)
+      character word,line
+      common /strings / strl,line_col,word(maxstrl),line(maxstrl)

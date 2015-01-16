@@ -1,0 +1,11 @@
+      real*8 Pa,mMoleculaO2,mMoleculaN2,mMoleculaAr
+      real*8 dN2,dO2,dAr,R,tConv
+      parameter (Pa          = 1.01325d5)!Pa
+      parameter (R           = 8.31431d0)! kJ,mol,kelvin
+      parameter (mMoleculaO2 = 32.0d-3 )! kg
+      parameter (mMoleculaN2 = 28.0d-3 )! kg
+      parameter (mMoleculaAr = 39.95d-3)! kg
+      parameter (dO2         = 0.21d0)  
+      parameter (dN2         = 0.78d0)
+      parameter (dAr         = 0.01d0)
+      parameter (tConv       = 273.15d0)

@@ -1,0 +1,17 @@
+      real*8  solvtime,elmtime,vecTime,dsTime,numeqTime,reordTime
+      real*8  totalTime,matvecTime,dotTime,grTime,readTime
+      real*8  vizTime,preconTime,posVelocityTime
+      real*8  time,time0,get_time
+c ... simple
+      real*8  solvU1Time,solvU2Time,solvPctime,solvEtime,grSimpleTime
+      real*8  elmU1Time,elmU2Time,elmPcTime,elmEtime,simpleTime
+      real*8  simpleUpdateTime,simpleItTime
+c ......................................................................            
+      common /timectrl/ solvTime,elmTime,vecTime,dsTime,numeqTime,
+     .              reordtime,totaltime,matvectime,dottime,
+     .              time,time0,readtime,viztime,grtime,precontime
+c ... simple
+      common /timeSimple/ solvU1Time,solvU2Time,solvPctime,grSimpleTime,
+     .                elmU1Time,elmU2Time,elmPcTime,elmEtime,simpleTime,
+     .                solvEtime,posVelocityTime,simpleUpdateTime,
+     .                simpleItTime
