@@ -1,0 +1,5 @@
+# use glob syntax
+syntax: glob
+*.swp
+src/*.o
+lib/*.a
