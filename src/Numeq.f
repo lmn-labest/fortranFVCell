@@ -1,4 +1,6 @@
 c *********************************************************************      
+c * NUMEQ: numero de equacoes                                         *
+c *********************************************************************      
        subroutine numeq(id,num,elconn,numel,nshared,neq)
        implicit none
        integer id(nshared,*),elconn(nshared,*),num(*)

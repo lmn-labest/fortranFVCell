@@ -146,7 +146,6 @@ c ...........................
             imiss = 1
          endif
   400 continue
-      print*
       do 550 nel = 1, numel
       do 550 is = 1, 4
          if (nelcon(is,nel) .ne. 0) go to 550
@@ -170,7 +169,6 @@ c ...........................
          endif
          endif
   550 continue
-      print*
       do 600 nel = 1, numel
       do 600 is = 1, 4
          if (nelcon(is,nel) .ne. 0) go to 600

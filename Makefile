@@ -8,7 +8,7 @@ PATH_MOD="src/"
 PATH_INCLUDE="include"    
 PRENAME=mvf
 FC=gfortran
-OPENMP=no
+OPENMP=yes
 DEBUG=yes
 #------------------gerando o nome do excutavel-------------
 ifeq ($(FC),ifort)
@@ -22,19 +22,37 @@ endif
 NAME+=$(PRENAME)_$(COMPILER_NAME)
 #-------------------Fontes---------------------------------
 src_mef = src/Adjacency.f\
+src/Assbly.f\
 src/Celllib.f\
-src/Cellib_trans.f\
+src/cellibAdvec.f\
+src/CellibDif.f\
+src/CellibPressure.f\
+src/CellibSimple.f\
+src/CellibTrans.f\
 src/Correct.f\
+src/Csr.f\
 src/Datastruct.f\
 src/Filenames.f\
+src/Graph.f\
+src/IdealGas.f\
+src/Iterativos.f\
+src/Iterativos_omp.f\
 src/Main.f\
-src/Rdata_mvf.f\
+src/Matvec.f\
+src/Matrix_partition.f\
+src/Matvec_omp.f\
+src/Numeq.f\
 src/Pdata.f\
 src/Pform.f\
+src/Reord.f\
+src/Rdata_mvf.f\
+src/Shape_matrix.f\
+src/Simple.f\
 src/Solver.f\
-src/Matvec.f\
-src/Vtk.f\
+src/Time.f\
+src/Transporte.f\
 src/Viz.f\
+src/Vtk.f\
 src/Write_vtk.f
 
 
@@ -76,7 +94,7 @@ mod_src  = $(mod_mef:%.f=%.o)
 objs_src= $(mod_src) $(src_mef:%.f=%.o)
 
 build:	$(objs_src) $(mod_src)	
-#	ls bin || mkdir -p bin
+	mkdir -p bin
 	$(FC) $(FFLAGS) $(objs_src) -o bin/$(NAME) $(LDFLAGS)   
 
 tags:

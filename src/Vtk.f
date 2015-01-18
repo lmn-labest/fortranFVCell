@@ -680,11 +680,14 @@ c ...Cabecalho do arquivo Vtk
         write(nfile) trim(buffer)
         buffer = 'DATASET UNSTRUCTURED_GRID'//lf
         write(nfile) trim(buffer)
-        buffer = 'FIELD FieldData 2'//lf
+        buffer = 'FIELD FieldData 3'//lf
         write(nfile) trim(buffer)
-        buffer = 'TIME 1 1 double'//lf
+        buffer = 'TIME(s) 1 1 double'//lf
         write(nfile) trim(buffer)
         write(nfile) t           
+        buffer = 'TIME(h) 1 1 double'//lf
+        write(nfile) trim(buffer)
+        write(nfile) t/3600.0d0           
         buffer = 'CYCLE 1 1 int'//lf
         write(nfile) trim(buffer)
         write(nfile) istep 
@@ -694,9 +697,11 @@ c ...Cabecalho do arquivo Vtk
         write(nfile,'(a)') 'ASCII'
         write(nfile,'(a)') 'DATASET UNSTRUCTURED_GRID'
         if(time) then
-          write(nfile,'(a)') 'FIELD FieldData 2'
-          write(nfile,'(a)') 'TIME 1 1 double'
+          write(nfile,'(a)') 'FIELD FieldData 3'
+          write(nfile,'(a)') 'TIME(s) 1 1 double'
           write(nfile,'(f16.6)') t
+          write(nfile,'(a)') 'TIME(h) 1 1 double'
+          write(nfile,'(f16.6)') t/3600.0d0
           write(nfile,'(a)') 'CYCLE 1 1 int'
           write(nfile,'(i9)') istep
         endif  

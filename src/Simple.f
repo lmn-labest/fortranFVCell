@@ -1,5 +1,6 @@
 c *********************************************************************
-c * SIMPLE: Monta a matriz de coeficente e calcula do residuo R       *
+c * SIMPLE: Algoritmo SIMPLE/SIMPLEC para o acoplamento da pressao/   *
+c * velocidade                                                        *
 c * ----------------------------------------------------------------- *
 c * Parametros de entrada :                                           *
 c * ----------------------------------------------------------------- *
@@ -151,9 +152,9 @@ c ...
 c ... variaveis
       real*8 cfl,reynalds,prandtl,grashof,vol,dtm,ddum
       real*8 ZERO,kZero
-      parameter (ZERO=1.0d-15)
+      parameter (ZERO=0.0d0)
 c ...
-      kZero         = 1
+      kZero         = 2
       ResAbs        = .false.
 c ... tecnica de interpolação de velocidade nas faces (checkerboard problem) 
       intVel        = 5
@@ -552,7 +553,7 @@ c ... atualizacao de u,v e p
         simpleUpdateTime = get_time() - simpleUpdateTime
 c .....................................................................
 c
-c ... equada de transporte da energia
+c ... equacao de transporte da energia
   100   continue
         if(sEnergy) then
 c ... posprocessamento do campo de velocidade

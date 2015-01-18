@@ -169,8 +169,8 @@ c ... tsolver               ( PCG - 1|PBiCGSTAB - 2|PGMRES -3 )
       solverPc = 1
       solverE  = 2
       maxItSol = 300000
-      solvtolPcg = 1.0d-14
-      solvtolBcg = 1.0d-14
+      solvtolPcg = 1.5d-16
+      solvtolBcg = 1.5d-16
 c ... nao linear
       log_nl   = .false.
       itPlot   = .false.
@@ -206,7 +206,109 @@ c ... simple
       fluxoM             = 0.0d0
 c ......................................................................
 c
-    5 continue 
+      i_x        = 1
+      i_ix       = 1
+      i_w        = 1
+      i_nelcon   = 1
+      i_nn       = 1
+      i_ls       = 1
+      i_lls      = 1
+      i_lw       = 1
+      i_du       = 1
+      i_b        = 1
+      i_mdf      = 1
+      i_un       = 1
+      i_ie       = 1
+      i_e        = 1
+      i_md       = 1
+      i_w0       = 1
+      i_wP       = 1
+      i_temp     = 1
+      i_num      = 1
+      i_ro       = 1
+      i_sx       = 1
+      i_t10      = 1
+      i_t1       = 1
+      i_bt10     = 1
+      i_bt1      = 1
+      i_gradT1   = 1
+      i_rCellt1  = 1
+      i_fluxlT1  = 1
+      i_adT1     = 1
+      i_alT1     = 1
+      i_auT1     = 1
+      i_iaT1     = 1
+      i_jaT1     = 1
+      i_idT1     = 1
+      i_pedgeT1  = 1
+      i_sedgeT1  = 1
+      i_pnode    = 1
+      i_snode    = 1
+      i_fnode    = 1
+      i_u1       = 1 
+      i_bU1      = 1
+      i_alU1     = 1
+      i_auU1     = 1
+      i_adU1     = 1
+      i_iaU1     = 1
+      i_jaU1     = 1
+      i_idU1     = 1
+      i_u2       = 1
+      i_bU2      = 1
+      i_alU2     = 1
+      i_auU2     = 1
+      i_adU2     = 1
+      i_iaU2     = 1
+      i_jaU2     = 1
+      i_idU2     = 1
+      i_p        = 1
+      i_pC       = 1
+      i_Pc1      = 1
+      i_bPc      = 1
+      i_alPc     = 1
+      i_auPc     = 1
+      i_adPc     = 1
+      i_iaPc     = 1
+      i_jaPc     = 1
+      i_idPc     = 1
+      i_en       = 1
+      i_en0      = 1
+      i_bE       = 1
+      i_alE      = 1
+      i_auE      = 1
+      i_adE      = 1
+      i_iaE      = 1
+      i_jaE      = 1
+      i_idE      = 1
+      i_gradU1   = 1
+      i_gradU2   = 1
+      i_gradPc   = 1
+      i_gradP    = 1
+      i_gradE    = 1
+      i_gradT    = 1
+      i_gradTu   = 1
+      i_sedgeF   = 1
+      i_pedgeF   = 1
+      i_sedgeE   = 1
+      i_pedgeE   = 1
+      i_ddU      = 1
+      i_iM       = 1
+      i_liM      = 1
+      i_bU10     = 1
+      i_bU20     = 1
+      i_bE0      = 1
+      i_fluxlU1  = 1
+      i_fluxlU2  = 1
+      i_fluxlPc  = 1
+      i_fluxlE   = 1
+      i_rCellU1  = 1
+      i_rCellU2  = 1
+      i_rCellPc  = 1
+      i_rCellE   = 1
+      i_div      = 1
+      i_mParameter = 1
+c
+c   5 continue 
 c
 c ... Abertura de arquivos:    
       nargs = iargc()
@@ -873,7 +975,7 @@ c ......................................................................
       print*, 'Macro mshape'
       fileout = name(prename,0,24)
       open(naux, file= fileout)
-      call pmshape(ia(i_iaT1),ia(i_jaT1),neqT1,naux)
+      call pmshape(ia(i_iaU1),ia(i_jaU1),neqU1,naux)
       close(naux)
       goto 50
 c ----------------------------------------------------------------------
@@ -1474,9 +1576,9 @@ c ......................................................................
      .                  ,istep,nout)
       i_nn        = dealloc('nn      ')
       goto 50
- 4110 continue
-      print*,'Erro na leitura da macro (PGRADU1) !'
-      goto 5000
+c4110 continue
+c     print*,'Erro na leitura da macro (PGRADU1) !'
+c     goto 5000
 c ......................................................................
 c
 c ......................................................................
@@ -1497,9 +1599,9 @@ c ......................................................................
      .                  ,istep,nout)
       i_nn        = dealloc('nn      ')
       goto 50
- 4210 continue
-      print*,'Erro na leitura da macro (PGRADU2) !'
-      goto 5000
+c4210 continue
+c     print*,'Erro na leitura da macro (PGRADU2) !'
+c     goto 5000
 c ......................................................................
 c
 c ......................................................................
@@ -1512,9 +1614,9 @@ c ......................................................................
  4300 continue
       print*, 'Macro '
       goto 50
- 4310 continue
-      print*,'Erro na leitura da macro () !'
-      goto 5000
+c4310 continue
+c     print*,'Erro na leitura da macro () !'
+c     goto 5000
 c ......................................................................
 c
 c ......................................................................
@@ -1527,9 +1629,9 @@ c ......................................................................
       skewnessCorrection = .true.
       write(*,*)' Set SKEWNESSCORRECTION ',skewnessCorrection
       goto 50
- 4410 continue
-      print*,'Erro na leitura da macro (SKEWC) !'
-      goto 5000
+c4410 continue
+c     print*,'Erro na leitura da macro (SKEWC) !'
+c     goto 5000
 c ......................................................................
 c
 c ......................................................................
@@ -1865,7 +1967,7 @@ c **********************************************************************
       integer i,j,neq
       integer nout
       do i=1, neq
-        write(nout,'(i,f16.8,4f16.8,f16.8)')i,ad(i)
+        write(nout,'(i9,f16.8,4f16.8,f16.8)')i,ad(i)
      .       ,(a(j),j=ia(i),ia(i+1)-1),b(i)
       enddo
       return

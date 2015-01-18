@@ -78,9 +78,9 @@ c *********************************************************************
       subroutine partition_csrc_bynonzeros(ia,neq)
       implicit none
       include 'openmp.fi'
-      integer ia(*),nnzr,neq
+      integer ia(*),neq
       integer mean_variables,line,thread_size(nThreadsSolver),tam,i
-      integer*8 nad  
+      integer nad  
 c
       nad = ia(neq+1)-1
       mean_variables = (2*nad + neq)/nThreadsSolver + 1
@@ -126,7 +126,6 @@ c *********************************************************************
       implicit none
        include 'openmp.fi'
       integer neq,split
-      integer i,j
 c
 c$omp parallel private(split)
 !$    thread_id = omp_get_thread_num()

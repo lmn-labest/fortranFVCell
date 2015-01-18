@@ -242,27 +242,32 @@ c * ----------------------------------------------------------------- *
 c * bandm  - numero maximo da banda da matriz                         *
 c * ----------------------------------------------------------------- *
 c *********************************************************************
-      subroutine banda_csr(ia,ja,neq,band)
+      subroutine banda_csr(ia,ja,neq,bandMax)
       implicit none
-      integer ia(*),ja(*),neq,band
-      integer i,j,col
-      band  = 0
+      integer ia(*),ja(*),neq,bandMax,bandMedia
+      integer i,j,col,colMax
+      bandMax   = 0
+      bandMedia = 0
       do i = 1, neq
         do j = ia(i), ia(i+1)-1
-          col = abs(i-ja(j))
+          col       = abs(i-ja(j))
 c          print*,i,col
-          band = max(col,band)
+          colMax    = max(col,colMax)
         enddo
+        bandMedia = bandMedia + colMax
+        bandMax   = max(bandMax,colMax)
+        colMax    = 0
       enddo
-      do i = 1, neq+1
-        print*,i,ia(i)
-      enddo
-      do i = 1, ia(neq+1)-ia(1)
-        print*,i,ja(i)
-      enddo
-      print*,band
-      stop
-      write(*,'(1x,a,i9)')'Danda da matriz : ',band 
+      bandMedia = bandMedia/neq 
+c     do i = 1, neq+1
+c       print*,i,ia(i)
+c     enddo
+c     do i = 1, ia(neq+1)-ia(1)
+c       print*,i,ja(i)
+c     enddo
+c     print*,band
+      write(*,'(1x,a,i9)')'Danda maxima da matriz : ',bandMax 
+      write(*,'(1x,a,i9)')'Danda media  da matriz : ',bandMedia 
       return
       end
 c *********************************************************************

@@ -4,7 +4,7 @@ c$    include 'omp_lib.h'
       logical openmpCell,openmpSolver
       integer max_num_threads,num_threads,
      .        thread_id,thread_begin,thread_end,thread_height,
-     .        max_num_threads_available,
+c    .        max_num_threads_available,
      .        nThreadsCell,nThreadsSolver
       parameter (max_num_threads = 24)
       common /omp_shared_buffer/ i_threads_y, 

@@ -1,6 +1,6 @@
 c **********************************************************************
-c * CELL_SI_EB_IDG_GGL : Celula 2D termpo de correção                  *
-c * para o fluxo divusivo e convectivo para equação de momentum        *
+c * CELL_SI_EB_IDG_GGL : Celula 2D com termo de correção               *
+c * para o fluxo difusivo e convectivo para equação de momentun        *
 c * formulacao gas ideal                                               *
 c * (EDGE-BASE-TVD)                                                    *
 c * -------------------------------------------------------------------*
@@ -533,8 +533,8 @@ c ......................................................................
 c **********************************************************************
 c
 c **********************************************************************
-c * CELL_SI_EB_I_GGL : Celula 2D termpo de correção                    *
-c * para o fluxo divusivo e convectivo para equação de momentum        *
+c * CELL_SI_EB_I_GGL : Celula 2D com termo de correção                 *
+c * para o fluxo difusivo e convectivo para equação de momentun        *
 c * formulacao incomepressivel                                         *
 c * (EDGE-BASE-TVD)                                                    *
 c * -------------------------------------------------------------------*
