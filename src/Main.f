@@ -41,6 +41,8 @@ c ... simple
       integer*8 i_fluxlU1,i_fluxlU2,i_fluxlPc,i_fluxlE
       integer*8 i_rCellU1,i_rCellU2,i_rCellPc,i_rCellE
       integer*8 i_div,i_mParameter
+c ... Coo
+      integer*8 i_lin,i_col,i_aCoo
 c ......................................................................
 c
 c ... arquivo de impressao nos nos ( temp,flux,disp,stress,...)
@@ -125,7 +127,7 @@ c ... Macro-comandos disponiveis:
      .           'underPc ','setpcell','pctemp  ','pcgrad  ','simpleC ',
      .           'underP  ','underU  ','setelev ','dt      ','config  ',
      .           'pgradU1 ','pgradU2 ','pgradU3 ','skewC   ','pgeo    ',
-     .           'pgradT  ','pgradE  ','        ','        ','        ',
+     .           'pgradT  ','pgradE  ','pbcoo   ','pcoo    ','        ',
      .           'pvort2D ','        ','        ','        ','        ',
      .           'underRo ','tolPcg  ','tolBiPcg','maxItSol','stop    '/
 c ----------------------------------------------------------------------
@@ -206,107 +208,110 @@ c ... simple
       fluxoM             = 0.0d0
 c ......................................................................
 c
-      i_x        = 1
-      i_ix       = 1
-      i_w        = 1
-      i_nelcon   = 1
-      i_nn       = 1
-      i_ls       = 1
-      i_lls      = 1
-      i_lw       = 1
-      i_du       = 1
-      i_b        = 1
-      i_mdf      = 1
-      i_un       = 1
-      i_ie       = 1
-      i_e        = 1
-      i_md       = 1
-      i_w0       = 1
-      i_wP       = 1
-      i_temp     = 1
-      i_num      = 1
-      i_ro       = 1
-      i_sx       = 1
-      i_t10      = 1
-      i_t1       = 1
-      i_bt10     = 1
-      i_bt1      = 1
-      i_gradT1   = 1
-      i_rCellt1  = 1
-      i_fluxlT1  = 1
-      i_adT1     = 1
-      i_alT1     = 1
-      i_auT1     = 1
-      i_iaT1     = 1
-      i_jaT1     = 1
-      i_idT1     = 1
-      i_pedgeT1  = 1
-      i_sedgeT1  = 1
-      i_pnode    = 1
-      i_snode    = 1
-      i_fnode    = 1
-      i_u1       = 1 
-      i_bU1      = 1
-      i_alU1     = 1
-      i_auU1     = 1
-      i_adU1     = 1
-      i_iaU1     = 1
-      i_jaU1     = 1
-      i_idU1     = 1
-      i_u2       = 1
-      i_bU2      = 1
-      i_alU2     = 1
-      i_auU2     = 1
-      i_adU2     = 1
-      i_iaU2     = 1
-      i_jaU2     = 1
-      i_idU2     = 1
-      i_p        = 1
-      i_pC       = 1
-      i_Pc1      = 1
-      i_bPc      = 1
-      i_alPc     = 1
-      i_auPc     = 1
-      i_adPc     = 1
-      i_iaPc     = 1
-      i_jaPc     = 1
-      i_idPc     = 1
-      i_en       = 1
-      i_en0      = 1
-      i_bE       = 1
-      i_alE      = 1
-      i_auE      = 1
-      i_adE      = 1
-      i_iaE      = 1
-      i_jaE      = 1
-      i_idE      = 1
-      i_gradU1   = 1
-      i_gradU2   = 1
-      i_gradPc   = 1
-      i_gradP    = 1
-      i_gradE    = 1
-      i_gradT    = 1
-      i_gradTu   = 1
-      i_sedgeF   = 1
-      i_pedgeF   = 1
-      i_sedgeE   = 1
-      i_pedgeE   = 1
-      i_ddU      = 1
-      i_iM       = 1
-      i_liM      = 1
-      i_bU10     = 1
-      i_bU20     = 1
-      i_bE0      = 1
-      i_fluxlU1  = 1
-      i_fluxlU2  = 1
-      i_fluxlPc  = 1
-      i_fluxlE   = 1
-      i_rCellU1  = 1
-      i_rCellU2  = 1
-      i_rCellPc  = 1
-      i_rCellE   = 1
-      i_div      = 1
+      i_x          = 1
+      i_ix         = 1
+      i_w          = 1
+      i_nelcon     = 1
+      i_nn         = 1
+      i_ls         = 1
+      i_lls        = 1
+      i_lw         = 1
+      i_du         = 1
+      i_b          = 1
+      i_mdf        = 1
+      i_un         = 1
+      i_ie         = 1
+      i_e          = 1
+      i_md         = 1
+      i_w0         = 1
+      i_wP         = 1
+      i_temp       = 1
+      i_num        = 1
+      i_ro         = 1
+      i_sx         = 1
+      i_t10        = 1
+      i_t1         = 1
+      i_bt10       = 1
+      i_bt1        = 1
+      i_gradT1     = 1
+      i_rCellt1    = 1
+      i_fluxlT1    = 1
+      i_adT1       = 1
+      i_alT1       = 1
+      i_auT1       = 1
+      i_iaT1       = 1
+      i_jaT1       = 1
+      i_idT1       = 1
+      i_pedgeT1    = 1
+      i_sedgeT1    = 1
+      i_pnode      = 1
+      i_snode      = 1
+      i_fnode      = 1
+      i_u1         = 1 
+      i_bU1        = 1
+      i_alU1       = 1
+      i_auU1       = 1
+      i_adU1       = 1
+      i_iaU1       = 1
+      i_jaU1       = 1
+      i_idU1       = 1
+      i_u2         = 1
+      i_bU2        = 1
+      i_alU2       = 1
+      i_auU2       = 1
+      i_adU2       = 1
+      i_iaU2       = 1
+      i_jaU2       = 1
+      i_idU2       = 1
+      i_p          = 1
+      i_pC         = 1
+      i_Pc1        = 1
+      i_bPc        = 1
+      i_alPc       = 1
+      i_auPc       = 1
+      i_adPc       = 1
+      i_iaPc       = 1
+      i_jaPc       = 1
+      i_idPc       = 1
+      i_en         = 1
+      i_en0        = 1
+      i_bE         = 1
+      i_alE        = 1
+      i_auE        = 1
+      i_adE        = 1
+      i_iaE        = 1
+      i_jaE        = 1
+      i_idE        = 1
+      i_gradU1     = 1
+      i_gradU2     = 1
+      i_gradPc     = 1
+      i_gradP      = 1
+      i_gradE      = 1
+      i_gradT      = 1
+      i_gradTu     = 1
+      i_sedgeF     = 1
+      i_pedgeF     = 1
+      i_sedgeE     = 1
+      i_pedgeE     = 1
+      i_ddU        = 1
+      i_iM         = 1
+      i_liM        = 1
+      i_bU10       = 1
+      i_bU20       = 1
+      i_bE0        = 1
+      i_fluxlU1    = 1
+      i_fluxlU2    = 1
+      i_fluxlPc    = 1
+      i_fluxlE     = 1
+      i_rCellU1    = 1
+      i_rCellU2    = 1
+      i_rCellPc    = 1
+      i_rCellE     = 1
+      i_div        = 1
       i_mParameter = 1
+      i_lin        = 1
+      i_col        = 1
+      i_aCoo       = 1
 c
 c   5 continue 
 c
@@ -1715,21 +1720,73 @@ c ......................................................................
 c
 c ......................................................................
 c
-c ... Macro-comando:        
+c ... Macro-comando: PBCOO   
 c
 c ......................................................................
  4800 continue
-      print*, 'Macro 4800'
+      print*, 'Macro PBCOO'
+c ...
+      i_lin  = alloc_4('linCooPc',1,neqPc+nadPc) 
+      i_col  = alloc_4('colCooPc',1,neqPc+nadPc) 
+      i_aCoo = alloc_4('aCooPc  ',1,neqPc+nadPc)
+c ......................................................................
+c      
+c ...
+      call csrToCoo(ia(i_lin) ,ia(i_col) ,ia(i_aCoo)
+     .             ,ia(i_iaPc),ia(i_jaPc)
+     .             ,ia(i_alPc),ia(i_adPc),ia(i_auPc)
+     .             ,neqPc     ,nadPc
+     .             ,.false.   ,.true.)
+c
+c ...
+      call writeCoo(ia(i_lin),ia(i_col),ia(i_aCoo)
+     .             ,ia(i_bPc),neqPc    ,neqPc+nadPc
+     .             ,prename  ,nout   
+     .             ,.true.)
+c ......................................................................
+c
+c ...
+      i_aCoo = dealloc('aCooPc  ')
+      i_col  = dealloc('colCooPc') 
+      i_lin  = dealloc('linCooPc') 
+c ......................................................................
+c      
       goto 50
 c ......................................................................
 c
 c ......................................................................
 c
-c ... Macro-comando:        
+c ... Macro-comando: PCOO       
 c
 c ......................................................................
  4900 continue
-      print*, 'Macro 4900'
+      print*, 'Macro PCOO'
+c ...
+      i_lin  = alloc_4('linCooPc',1,neqPc+nadPc) 
+      i_col  = alloc_4('colCooPc',1,neqPc+nadPc) 
+      i_aCoo = alloc_4('aCooPc  ',1,neqPc+nadPc)
+c ......................................................................
+c      
+c ...
+      call csrToCoo(ia(i_lin) ,ia(i_col) ,ia(i_aCoo)
+     .             ,ia(i_iaPc),ia(i_jaPc)
+     .             ,ia(i_alPc),ia(i_adPc),ia(i_auPc)
+     .             ,neqPc     ,nadPc
+     .             ,.false.   ,.false.)
+c
+c ...
+      call writeCoo(ia(i_lin),ia(i_col),ia(i_aCoo)
+     .             ,ia(i_bPc),neqPc    ,neqPc+nadPc
+     .             ,prename  ,nout   
+     .             ,.false.)
+c ......................................................................
+c
+c ...
+      i_aCoo = dealloc('aCooPc  ')
+      i_col  = dealloc('colCooPc') 
+      i_lin  = dealloc('linCooPc') 
+c ......................................................................
+c      
       goto 50
 c ......................................................................
 c

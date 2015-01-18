@@ -303,7 +303,7 @@ c
 c *********************************************************************
 c  * MATVEC_CSRD_SYM: produto matriz-vetor y = Ax  (A simetrica),     *
 c *                   coef. de A no formato CSR e armazenamento       *
-c *                   da parte superior, com loops aninhados.         *                                   *
+c *                   da parte superior, com loops aninhados.         *                                  
 c * ----------------------------------------------------------------- *
 c * Parametros de entrada :                                           *
 c * ----------------------------------------------------------------- *
@@ -311,7 +311,7 @@ c * ad     - diagonal da matriz A                                     *
 c * x      - valores do vetor a ser multiplicado por A                *
 c * y      - nao definido                                             *  
 c * al(nad)- parte triangular inferior de A no formato CSR            *
-c * dum    - nao utilizado                                            *                                             *
+c * dum    - nao utilizado                                            *                                   
 c * ia     - ponteiro do arranjo do csr da matrix A                   *
 c * ja     - arranjo csr da matriz A                                  *
 c * la     - valores locais da matriz A da celula P                   *
@@ -329,7 +329,8 @@ c *********************************************************************
       integer ja(*),neq,i,k,ia(*),jak
 c ......................................................................
       matvectime = get_time() - matvectime
-      do i = 1, neq
+      y(1) = ad(1)*x(1)
+      do i = 2, neq
          xi = x(i)
 c
 c ...    Produto da diagonal de A por x:

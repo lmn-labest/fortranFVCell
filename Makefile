@@ -9,7 +9,7 @@ PATH_INCLUDE="include"
 PRENAME=mvf
 FC=gfortran
 OPENMP=yes
-DEBUG=yes
+DEBUG=no
 #------------------gerando o nome do excutavel-------------
 ifeq ($(FC),ifort)
   COMPILER_NAME=intel
@@ -31,6 +31,7 @@ src/CellibSimple.f\
 src/CellibTrans.f\
 src/Correct.f\
 src/Csr.f\
+src/CsrToCoo.f\
 src/Datastruct.f\
 src/Filenames.f\
 src/Graph.f\
@@ -83,7 +84,7 @@ endif
 ifeq ($(DEBUG),yes)
   OFLAGS += -g 
 else
-  OFLAGS += -O2  
+  OFLAGS += -O3  
 endif
 #--------------------------------------------------------------------
 FFLAGS= $(NFLAGS) $(OFLAGS) 

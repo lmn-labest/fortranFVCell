@@ -144,13 +144,13 @@ c ... Solver
       integer solverU1,solverU2,solverPc,solverE,maxIt
       real*8  sx(*)
 c ...
-      real*8 dot,dot1,rU1,rU2,rPc,rE,rU10,rU20,rE0,rPc0
-      integer itSimple,conv,itEnergy,j
+      real*8 dot,rU1,rU2,rPc,rE,rU10,rU20,rE0,rPc0
+      integer itSimple,conv
       integer noutSimple
       logical itResSimplePLot,solvU1,solvU2,solvE
       logical ResAbs,sEnergy,xMomentum,yMomentum
 c ... variaveis
-      real*8 cfl,reynalds,prandtl,grashof,vol,dtm,ddum
+      real*8 cfl,reynalds,prandtl,grashof,vol
       real*8 ZERO,kZero
       parameter (ZERO=0.0d0)
 c ...
@@ -179,6 +179,7 @@ c      open(19, file= 'matriz2.txt')
       rU10 = 1.d0
       rU20 = 1.d0 
       rE0  = 1.d0
+      conv = 0
 c .....................................................................
 c
 c ... calculo de parametro por celula
@@ -484,7 +485,7 @@ c ... equacao da correcao da pressao
      .            ,.false.,.true.,bs)
         elmPcTime = get_time() - elmPCTime
 c .....................................................................
-c
+c 
 c ...
         rPc = dsqrt(dot(rCPc,rCPc,neqPc))
         if( rPc .lt. ZERO) goto 100  
@@ -492,6 +493,7 @@ c ...
         rU1 = dsqrt(dot(rCU1,rCU1,neqU1))
         rU2 = dsqrt(dot(rCU2,rCU2,neqU2))
         conv = 0
+c       return
 c .....................................................................       
 c
 c ... Solver ApC = pC
@@ -501,6 +503,7 @@ c ... Solver ApC = pC
      .             ,unsymPc,solvTolPcg,maxIt,solverPc,matrizPc,2)
         solvPcTime = get_time() - solvPCTime
         call getRes(pC,sx,num,neqPc,numel,.false.)
+c      return
 c .....................................................................
 c
 c ... segunda equacao da correcao da pressao com malhas nao-ortognais
@@ -894,7 +897,7 @@ c * ----------------------------------------------------------------- *
 c *********************************************************************      
       subroutine massUpdate(ro,numel)
       implicit none
-      real*8 ro(3,numel),k
+      real*8 ro(3,numel)
       integer numel,i
       do i = 1, numel
         ro(1,i) = ro(2,i)

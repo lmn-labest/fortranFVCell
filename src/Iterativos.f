@@ -60,7 +60,6 @@ c .....................................................................
       do j = 1, maxit
          call matvec(ad,au,al,b,z,ia,ja,neq)
          alpha = d/dot(b,z,neq)
-         dx = 0.d0
          do i = 1, neq
             x(i) = x(i) + alpha * b(i)
             r(i) = r(i) - alpha * z(i)

@@ -409,7 +409,7 @@ c ... variavel internas
       real*8  dVirtualP(2),dVirtualViz(2)
       integer i,j,l,idcell,viznel,icod,cor
       logical bs
-      parameter (ZERO  = 1.0d-60)
+      parameter (ZERO  = 1.0d-14)
       parameter (const = 1.0d60)
       external limitv,areacell
 c ...

@@ -50,23 +50,23 @@ c **********************************************************************
       integer maxnpts
       parameter (maxnpts = 200)
       integer i,ierr
-      integer nalp
-      logical it
+      integer nalp,align
 c ... valores do ponteiros     
       integer*8 ip(maxnpts)
       character*8 arname(maxnpts)
-      common /malloc_info/ arname,ip,nalp
+      common /malloc_info/ arname,ip,nalp,align
 c ...
-c      allocate(ia(maxmem), stat=ierr)
-c      if (ierr .ne. 0) then
-c         print *, 'error: cannot allocate memory pool in heap.'
-c         stop
-c      endif
+      align = 16
+c ...
+      allocate(ia(maxmem), stat=ierr)
+      if (ierr .ne. 0) then
+         print *, 'error: cannot allocate memory pool in heap.'
+         stop
+      endif
 c ......................................................................
-c
-c ... alocacao iterativa (.true.)
-      it = .false.
-      call availablemem(it)
+      print*,"**************   init_malloc   ***********************" 
+      print*,"Available mem in work vector.",(maxmem*4)/(1024**2),"MBs"
+      print*,"******************************************************" 
 c ......................................................................
       do i = 1, maxnpts
          ip(i)     = 0
@@ -88,14 +88,14 @@ c *                                                                    *
 c *   name - nome do arranjo a ser alocado                             *
 c *   nl   - numero de linhas do arranjo                               *
 c *   nc   - numero de colunas do arranjo                              *
-c *                                                                    *
+c *                      
 c *   Parametros de saida:                                             *
 c *   -------------------                                              *
 c *                                                                    *
 c *   alloc_4 - ponteiro do arranjo                                    *
 c *                                                                    *
 c **********************************************************************
-      implicit none 
+      implicit none
       integer maxnpts
       parameter (maxnpts = 200)
 c ... valores do ponteiros     
@@ -103,11 +103,21 @@ c ... valores do ponteiros
       integer*8 ipi,n,locate
 c ......................................................................
       character*8 arname(maxnpts),name
-      integer nc,nalp
+      integer nc,nalp,align
       integer nl
-      common /malloc_info/ arname,ip,nalp
+      common /malloc_info/ arname,ip,nalp,align
 c ......................................................................
       n = nl*nc
+c ... alinhamento com 16 bytes
+c     (libera a memoria em pacotes de 16, 32 , 48, ... bytes)
+      if(align .eq. 16) then
+        n = 4 * n
+        if(mod(n,16) .ne. 0) then
+          n = (1 + n/16)*16
+        endif
+        n = n / 4
+      endif
+c ......................................................................
 c     if (n .le. 0) then
 c        aloc4 = ip(nalp+1)
 c        return
@@ -170,10 +180,19 @@ c ... valores do ponteiros
       integer*8 locate,ipi,n
 c ......................................................................
       character*8 arname(maxnpts),name
-      integer nl,nc,nalp
-      common /malloc_info/ arname,ip,nalp
+      integer nl,nc,nalp,align
+      common /malloc_info/ arname,ip,nalp,align
 c ......................................................................
       n = nl*nc
+c ... alinhamento com 16 bytes
+c     (libera a memoria em pacotes de 16, 32 , 48, ... bytes)
+      if(align .eq. 16) then
+        n = 8 * n
+        if(mod(n,16) .ne. 0) then
+          n = (1 + n/16)*16
+        endif
+        n = n / 4
+      endif
 c     if (n .le. 0) then
 c        aloc8 = ip(nalp+1)
 c        return
@@ -201,12 +220,15 @@ c         call stop_mef()
          stop
       endif
 c ......................................................................                  
-      ipi = ip(nalp)
-      if(mod(ipi,2) .eq. 0) then
-         ipi      = ipi+1
-         ip(nalp) = ipi
+       ipi = ip(nalp)
+       if(align .eq. 0) then 
+         if(mod(ipi,2) .eq. 0) then
+           ipi      = ipi+1
+           ip(nalp) = ipi
+         endif
+         n = n*2 
       endif
-      ip(nalp+1) = ipi + 2*n
+      ip(nalp+1) = ipi + n
       call maxtest(ip(nalp+1),name)
       arname(nalp) = name
       alloc_8 = ipi
@@ -503,65 +525,4 @@ c ...
       return
       end
 c ......................................................................
-c **********************************************************************
-c
-c **********************************************************************
-c * AVAIBLEMEM:                                                        *
-c * ------------------------------------------------------------------ *
-c * Parametro de entrada :                                             *
-c * ------------------------------------------------------------------ *
-c **********************************************************************
-       subroutine availablemem(iws)
-       use Malloc
-       implicit none
-c      include 'mpif.h'
-c      include 'parallel.fi'
-       integer ier,ntem
-       parameter (ntem = 10)
-       integer i
-       logical iws
-c
-       if(iws) then      
-c ... Tentativa de alocar memoria no heap
-         i = 1
-         allocate(ia(maxmem),stat=ier)
-c ... se nao conseguir divide o numero de posicoes do ia pela metade
-         do while(ier .ne. 0)
-           print*,i
-           maxmem = maxmem/2
-           allocate(ia(maxmem),stat=ier)
-c ... numero de tentativas        
-           if ( i .gt. ntem) then
-             print *, 'error: cannot allocate memory pool in heap.'
-c            call stop_mef()
-             stop
-           endif  
-           i = i + 1
-         enddo
-c .....................................................................
-c
-c ...        
-       else
-        allocate(ia(maxmem), stat=ier)
-        if (ier .ne. 0) then
-           print *, 'error: cannot allocate memory pool in heap.'
-           stop
-        endif
-       endif       
-c .....................................................................
-c
-c ...
-c      if(my_id .eq. 0) then
-       print*,"**************   init_malloc   ***********************" 
-       print*,"Available mem in work vector.",(maxmem*4)/(1024**2),"MBs"
-       if(iws) print*,"It :",i                                  
-       print*,"******************************************************" 
-c      endif
-c .....................................................................
-c
-c ...
-c      call MPI_barrier(MPI_COMM_WORLD,ierr)
-c .....................................................................
-       return
-       end
 c **********************************************************************

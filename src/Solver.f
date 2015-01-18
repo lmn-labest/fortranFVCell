@@ -83,7 +83,7 @@ c ... OPENMP
           if(openmpSolver) then
             call pcg_omp(neq,nad,iax,ja,ad,au,al,ia(i_m),b,x,ia(i_z)
 c ... comum     
-c     .                  ,ia(i_r),tol,maxit,matvec_csrd_sym_omp
+c    .                  ,ia(i_r),tol,maxit,matvec_csrd_sym_omp
 c ... loop interno desenrolado 2     
      .                  ,ia(i_r),tol,maxit,matvec_csrd_sym_ilu2_omp
 c ... loop interno desenrolado 4      
@@ -92,7 +92,7 @@ c ... loop externo desenrolado 2 / loop interno desenrolado 2
 c     .                  ,ia(i_r),tol,maxit,matvec_csrd_sym_ilo2_ilu2_omp
 c ... loop externo desenrolado 2 / loop interno desenrolado 4      
 c    .                  ,ia(i_r),tol,maxit,matvec_csrd_sym_ilo2_ilu4_omp
-     .                  ,dot_omp,ia(i_threads_y),nlit,.true.)
+     .                  ,dot_omp,ia(i_threads_y),nlit,.false.)
 c .....................................................................
 c
 c ... sequencial          
