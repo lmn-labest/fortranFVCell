@@ -144,6 +144,10 @@ c ......................................................................
         write(StrExtensao,'( I6 )') NumArq
         write(StrExtensao,'( A  )') adjustl(StrExtensao)
         StrExtensao='_log_simple_'//trim(StrExtensao)//'.txt'
+      elseif(code .eq. 52) then
+        write(StrExtensao,'( I6 )') NumArq
+        write(StrExtensao,'( A  )') adjustl(StrExtensao)
+        StrExtensao='coo_'//trim(StrExtensao)
       endif    
 c ................................................................
 c

@@ -34,6 +34,7 @@ src/Correct.f\
 src/Csr.f\
 src/CsrToCoo.f\
 src/Datastruct.f\
+src/ExportCoo.f\
 src/Filenames.f\
 src/Graph.f\
 src/IdealGas.f\

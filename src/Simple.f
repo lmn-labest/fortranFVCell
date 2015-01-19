@@ -111,7 +111,8 @@ c *********************************************************************
      .                  ,solverPc  ,solverE   ,solvTolPcg    ,solvTolBcg
      .                  ,maxIt    ,noutSimple,itResSimplePlot,sEnergy   
      .                  ,istep    ,cfl       ,reynalds       ,prandtl   
-     .                  ,grashof  ,vol       ,unsymPc        ,bs)
+     .                  ,grashof  ,vol       ,unsymPc        ,bs
+     .                  ,prename  ,noutCoo   ,flagCoo)
 c...
       implicit none
       include 'time.fi'
@@ -123,6 +124,8 @@ c...
       integer md(*)
       logical unsymPc
       logical bs
+c ...
+      character*80 prename
 c ... gradientes
       real*8  gradU1(ndm,*),gradU2(*),gradP(*),gradPc(*),gradE(*),div(*)
       real*8  fluxlU1(*),fluxlU2(*),fluxlPc(*),fluxlE(*),iM(*),mP(*)
@@ -146,8 +149,8 @@ c ... Solver
 c ...
       real*8 dot,rU1,rU2,rPc,rE,rU10,rU20,rE0,rPc0
       integer itSimple,conv
-      integer noutSimple
-      logical itResSimplePLot,solvU1,solvU2,solvE
+      integer noutSimple,noutCoo
+      logical itResSimplePLot,solvU1,solvU2,solvE,flagCoo
       logical ResAbs,sEnergy,xMomentum,yMomentum
 c ... variaveis
       real*8 cfl,reynalds,prandtl,grashof,vol
@@ -486,6 +489,13 @@ c ... equacao da correcao da pressao
         elmPcTime = get_time() - elmPCTime
 c .....................................................................
 c 
+c ... export coo format
+        if(flagCoo) then
+          call exportCoo(iaPc,jaPc,alPc   ,adPc    ,auPc,bPc,neqPc,nadPc
+     .                  ,.false.  ,prename,noutCoo,itSimple)
+        endif
+c .....................................................................
+c 
 c ...
         rPc = dsqrt(dot(rCPc,rCPc,neqPc))
         if( rPc .lt. ZERO) goto 100  
@@ -493,7 +503,6 @@ c ...
         rU1 = dsqrt(dot(rCU1,rCU1,neqU1))
         rU2 = dsqrt(dot(rCU2,rCU2,neqU2))
         conv = 0
-c       return
 c .....................................................................       
 c
 c ... Solver ApC = pC
@@ -503,7 +512,6 @@ c ... Solver ApC = pC
      .             ,unsymPc,solvTolPcg,maxIt,solverPc,matrizPc,2)
         solvPcTime = get_time() - solvPCTime
         call getRes(pC,sx,num,neqPc,numel,.false.)
-c      return
 c .....................................................................
 c
 c ... segunda equacao da correcao da pressao com malhas nao-ortognais

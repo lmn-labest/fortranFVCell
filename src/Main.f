@@ -96,12 +96,12 @@ c ......................................................................
 c
 c ... Arquivos de entrada e saida:
 c
-      integer nin,nout,naux,ntime,noutSimple,noutSave
+      integer nin,nout,naux,ntime,noutSimple,noutSave,noutCoo
       logical log_nl
-      logical bvtk
+      logical bvtk,flagCoo
       real*8  setelev 
       data nin /1/, nout /2/, naux /10/, ntime /14/, noutSimple /15/
-      data noutSave /16/
+      data noutSave /16/, noutCoo /17/
       data flag_pcd /.false./
       data setelev /1.0d0/
 c     arquivo de impressao de nos associados aos seguintes inteiros
@@ -133,7 +133,8 @@ c ... Macro-comandos disponiveis:
 c ----------------------------------------------------------------------
 c
 c ...
-      bvtk = .true.
+      bvtk    = .true.
+      flagCoo = .false.
 c ...
       nmacro1 = 0 
       nmacro2 = 0 
@@ -1046,7 +1047,8 @@ c ...
      .     ,solverPc       ,solverE       ,solvTolPcg     ,solvTolBcg   
      .     ,maxItSol       ,noutSimple    ,itResSimplePlot,sEnergy  
      .     ,istep          ,cfl           ,re             ,prandtl 
-     .     ,grashof        ,vol           ,unsymPc        ,bs)
+     .     ,grashof        ,vol           ,unsymPc        ,bs 
+     .     ,prename        ,noutCoo       ,flagCoo)                    
       simpleTime = get_time() - simpleTime 
       goto 50
 c ----------------------------------------------------------------------
@@ -1766,32 +1768,7 @@ c
 c ......................................................................
  4900 continue
       print*, 'Macro PCOO'
-c ...
-      i_lin  = alloc_4('linCooPc',1,neqPc+nadPc) 
-      i_col  = alloc_4('colCooPc',1,neqPc+nadPc) 
-      i_aCoo = alloc_4('aCooPc  ',1,neqPc+nadPc)
-c ......................................................................
-c      
-c ...
-      call csrToCoo(ia(i_lin) ,ia(i_col) ,ia(i_aCoo)
-     .             ,ia(i_iaPc),ia(i_jaPc)
-     .             ,ia(i_alPc),ia(i_adPc),ia(i_auPc)
-     .             ,neqPc     ,nadPc
-     .             ,.false.   ,.false.)
-c
-c ...
-      call writeCoo(ia(i_lin),ia(i_col),ia(i_aCoo)
-     .             ,ia(i_bPc),neqPc    ,neqPc+nadPc
-     .             ,prename  ,nout   
-     .             ,.false.)
-c ......................................................................
-c
-c ...
-      i_aCoo = dealloc('aCooPc  ')
-      i_col  = dealloc('colCooPc') 
-      i_lin  = dealloc('linCooPc') 
-c ......................................................................
-c      
+      flagCoo = .true.
       goto 50
 c ......................................................................
 c

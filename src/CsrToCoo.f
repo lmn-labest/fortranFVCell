@@ -83,7 +83,7 @@ c* f       -> vetor de forcas                                        *
 c* neq     -> numero de equacoes                                     * 
 c* nnz     -> numero totoal de elementos nao nulos                   * 
 c* nad     -> numero de termos nao nulos                             * 
-c* prename ->                                                        * 
+c* nameout ->                                                        * 
 c* fileout -> numero do arquivo de saida                             * 
 c* flag    -> coo no formato binario                                 * 
 c*-------------------------------------------------------------------* 
@@ -93,16 +93,17 @@ c*-------------------------------------------------------------------*
 c* OBS:                                                              * 
 c*-------------------------------------------------------------------* 
 c********************************************************************* 
-      subroutine writeCoo(lin,col,val,f,neq,nnz,prename,fileOut,flag)
+      subroutine writeCoo(lin,col,val,f,neq,nnz,prefixo,fileOut,flag)
       implicit none
       integer lin(*),col(*),nnz,i,neq
       real*8  val(*),f(*)
       integer fileOut
       logical flag
-      character*80 prename
-      character*1024 str,nameOut
+      character*90  prefixo
+      character*100 nameOut
+      character*1024 str
 c
-      nameOut = trim(prename) //'.mtx'
+      nameOut = trim(prefixo) //'.mtx'
 c ... matriz de coeficientes
       open(fileOut , action='write', file=nameOut)
       str = '%%MatrixMarket matrix coordinate real symmetric'
@@ -119,7 +120,7 @@ c ...
 c .....................................................................
 c
 c ... vetor de forca
-      nameOut = trim(prename) //'_b.mtx'
+      nameOut = trim(prefixo) //'_b.mtx'
       open(fileOut , action='write', file=nameOut)
       str ='%%MatrixMarket matrix array real general'
       write(fileOut,'(a)')trim(str)
