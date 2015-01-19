@@ -56,7 +56,7 @@ c ... valores do ponteiros
       character*8 arname(maxnpts)
       common /malloc_info/ arname,ip,nalp,align
 c ...
-      align = 16
+      align =   16
 c ...
       allocate(ia(maxmem), stat=ierr)
       if (ierr .ne. 0) then

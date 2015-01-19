@@ -128,12 +128,17 @@ c ... Macro-comandos disponiveis:
      .           'underP  ','underU  ','setelev ','dt      ','config  ',
      .           'pgradU1 ','pgradU2 ','pgradU3 ','skewC   ','pgeo    ',
      .           'pgradT  ','pgradE  ','pbcoo   ','pcoo    ','        ',
-     .           'pvort2D ','        ','        ','        ','        ',
+     .           'pvort2D ','bench   ','        ','        ','        ',
      .           'underRo ','tolPcg  ','tolBiPcg','maxItSol','stop    '/
 c ----------------------------------------------------------------------
 c
 c ...
-      bvtk = .true. 
+      bvtk = .true.
+c ...
+      nmacro1 = 0 
+      nmacro2 = 0 
+      imacro1 = 0 
+      imacro2 = 0 
 c ...      
       iloop1 = 0
       iloop2 = 0
@@ -587,7 +592,7 @@ c ... equacao Energia
       if(sEnergy) then
         i_idE  = alloc_4('idE     ',nen,numel)
         numeqTime = get_time() - numeqTime
-        call numeq(ia(i_idE ),ia(i_num),ia(i_nelcon),numel,nen,neqE )
+        call numeq(ia(i_idE ),ia(i_num),ia(i_nelcon),numel,nen,neqE)
         numeqTime = get_time() - numeqTime
       endif
 c .....................................................................
@@ -1850,11 +1855,20 @@ c ......................................................................
 c
 c ......................................................................
 c
-c ... Macro-comando:        
+c ... Macro-comando: BENCH  
 c
 c ......................................................................
  5200 continue
-      print*, 'Macro 5200'
+      print*, 'Macro BENCH'
+      call benchmarkDot(openmpSolver,neqPc,nThreadsSolver)
+      call benchmarkCsr(openmpSolver,.false.
+     .                 ,ia(i_iaPc),ia(i_jaPc)
+     .                 ,ia(i_alPc),ia(i_adPc),ia(i_auPc)
+     .                 ,neqPc     ,nadPc     ,nThreadsSolver)
+      call benchmarkCsr(openmpSolver,.true. 
+     .                 ,ia(i_iaU1),ia(i_jaU1)
+     .                 ,ia(i_alU1),ia(i_adU1),ia(i_auU1)
+     .                 ,neqU1     ,nadU1     ,nThreadsSolver)
       goto 50
 c ......................................................................
 c

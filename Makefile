@@ -23,6 +23,7 @@ NAME+=$(PRENAME)_$(COMPILER_NAME)
 #-------------------Fontes---------------------------------
 src_mef = src/Adjacency.f\
 src/Assbly.f\
+src/BenchMark.f\
 src/Celllib.f\
 src/cellibAdvec.f\
 src/CellibDif.f\

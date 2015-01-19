@@ -1,108 +1,3 @@
-      real*8 function dot(a,b,n)
-c **********************************************************************
-c *                                                                    *
-c *   DOT: Produto escalar a.b                                         *
-c *                                                                    *
-c **********************************************************************
-      implicit none
-      include 'time.fi'
-      integer n,i
-      real*8  a(*),b(*)
-c ......................................................................
-      dottime = get_time() - dottime
-      dot = 0.d0
-      do i = 1, n
-         dot = dot + a(i)*b(i)
-      enddo
-      dottime = get_time() - dottime
-c ......................................................................    
-      return
-      end
-c **********************************************************************
-      real*8 function dot_local(a,b,n)
-c **********************************************************************
-c *                                                                    *
-c *   DOT_LOCAL: Produto escalar a.b para vetores pequenos             *
-c *                                                                    *
-c **********************************************************************
-      implicit none
-      include 'time.fi'
-      integer n,i
-      real*8  a(*),b(*)
-c ......................................................................
-      dot_local = 0.d0
-      do i = 1, n
-         dot_local = dot_local + a(i)*b(i)
-      enddo
-c ......................................................................    
-      return
-      end
-c **********************************************************************
-c
-c **********************************************************************
-      subroutine aequalb(a,b,n)
-c **********************************************************************
-c *                                                                    *
-c *   AEQUALB:                                                         *
-c *   -------                                                          *
-c *                                                                    *
-c *   Parametros de entrada:                                           *
-c *   ---------------------                                            *
-c *                                                                    *
-c *    a(n) - vetor de dimensao n                                      *
-c *    b(n) - vetor de dimensao n                                      *
-c *    n    - dimensao                                                 *
-c *                                                                    *
-c *   Parametros de saida:                                             *
-c *   -------------------                                              *
-c *                                                                    *
-c *   a = b                                                            *
-c *                                                                    *
-c **********************************************************************
-      implicit none
-      integer n,i
-      real*8 a(*),b(*)
-c ......................................................................
-      do 100 i = 1, n
-         a(i) = b(i)
-  100 continue
-      return
-      end
-c **********************************************************************
-c **********************************************************************
-      subroutine aequalbVetor(a,b,n,ndf)
-c **********************************************************************
-c *                                                                    *
-c *   AEQUALB:                                                         *
-c *   -------                                                          *
-c *                                                                    *
-c *   Parametros de entrada:                                           *
-c *   ---------------------                                            *
-c *                                                                    *
-c *    a(n) - vetor de dimensao n                                      *
-c *    b(n) - vetor de dimensao n                                      *
-c *    n    - dimensao                                                 *
-c *    ndf  - graus de liberdade                                       *
-c *                                                                    *
-c *   Parametros de saida:                                             *
-c *   -------------------                                              *
-c *                                                                    *
-c *   a = b                                                            *
-c *                                                                    *
-c **********************************************************************
-      implicit none
-      integer n,ndf,i,j
-      real*8 a(ndf,*),b(ndf,*)
-c ......................................................................
-      do i = 1, n
-        do j = 1, ndf
-          a(j,i) = b(j,i)
-        enddo 
-      enddo
-      return
-      end
-c **********************************************************************
-c 
 c *********************************************************************
 c * MATVEC_CSRD: produto matriz vetor no formato csr ( grafo de A     *
 c * nao simetrico; coeficiente de A nao simetrico; ad - diagonal,     *
@@ -243,7 +138,7 @@ c **********************************************************************
 c
 c *********************************************************************
 c * MATVEC_CSRC_SYM: produto matriz vetor no formato csrc( grafo de A *
-c * simetrico; coeficiente de A simetrico; ad-diagonal;al-inferior)   *                                              *
+c * simetrico; coeficiente de A simetrico; ad-diagonal;al-inferior)   *
 c * ----------------------------------------------------------------- *
 c * Parametros de entrada :                                           *
 c * ----------------------------------------------------------------- *
@@ -251,7 +146,7 @@ c * ad     - diagonal da matriz A                                     *
 c * x      - valores do vetor a ser multiplicado por A                *
 c * y      - nao definido                                             *  
 c * al(nad)- parte triangular inferior de A no formato CSR            *
-c * au(*)  - nao utilizado                                            *                                             *
+c * au(*)  - nao utilizado                                            *  
 c * ia     - ponteiro do arranjo do csr da matrix A                   *
 c * ja     - arranjo csr da matriz A                                  *
 c * la     - valores locais da matriz A da celula P                   *
@@ -269,8 +164,8 @@ c *********************************************************************
       integer ja(*),neq,i,k,ia(*),jak
 c ......................................................................
        matvectime = get_time() - matvectime
-       y(1:neq) = 0.d0
-       do i = 1, neq
+       y(1) = ad(1)*x(1)
+       do i = 2, neq
 c ...    Produto da diagonal de A por x:
 c
          xi = x(i)
@@ -311,7 +206,7 @@ c * ad     - diagonal da matriz A                                     *
 c * x      - valores do vetor a ser multiplicado por A                *
 c * y      - nao definido                                             *  
 c * al(nad)- parte triangular inferior de A no formato CSR            *
-c * dum    - nao utilizado                                            *                                   
+c * dum    - nao utilizado                                            * 
 c * ia     - ponteiro do arranjo do csr da matrix A                   *
 c * ja     - arranjo csr da matriz A                                  *
 c * la     - valores locais da matriz A da celula P                   *
@@ -439,4 +334,108 @@ c ......................................................................
       return
       end  
 c *********************************************************************
-
+      real*8 function dot(a,b,n)
+c **********************************************************************
+c *                                                                    *
+c *   DOT: Produto escalar a.b                                         *
+c *                                                                    *
+c **********************************************************************
+      implicit none
+      include 'time.fi'
+      integer n,i
+      real*8  a(*),b(*)
+c ......................................................................
+      dottime = get_time() - dottime
+      dot = 0.d0
+      do i = 1, n
+         dot = dot + a(i)*b(i)
+      enddo
+      dottime = get_time() - dottime
+c ......................................................................    
+      return
+      end
+c **********************************************************************
+      real*8 function dot_local(a,b,n)
+c **********************************************************************
+c *                                                                    *
+c *   DOT_LOCAL: Produto escalar a.b para vetores pequenos             *
+c *                                                                    *
+c **********************************************************************
+      implicit none
+      include 'time.fi'
+      integer n,i
+      real*8  a(*),b(*)
+c ......................................................................
+      dot_local = 0.d0
+      do i = 1, n
+         dot_local = dot_local + a(i)*b(i)
+      enddo
+c ......................................................................    
+      return
+      end
+c **********************************************************************
+c
+      subroutine aequalb(a,b,n)
+c **********************************************************************
+c *                                                                    *
+c *   AEQUALB:                                                         *
+c *   -------                                                          *
+c *                                                                    *
+c *   Parametros de entrada:                                           *
+c *   ---------------------                                            *
+c *                                                                    *
+c *    a(n) - vetor de dimensao n                                      *
+c *    b(n) - vetor de dimensao n                                      *
+c *    n    - dimensao                                                 *
+c *                                                                    *
+c *   Parametros de saida:                                             *
+c *   -------------------                                              *
+c *                                                                    *
+c *   a = b                                                            *
+c *                                                                    *
+c **********************************************************************
+      implicit none
+      integer n,i
+      real*8 a(*),b(*)
+c ......................................................................
+      do 100 i = 1, n
+         a(i) = b(i)
+  100 continue
+      return
+      end
+c **********************************************************************
+c
+c **********************************************************************
+      subroutine aequalbVetor(a,b,n,ndf)
+c **********************************************************************
+c *                                                                    *
+c *   AEQUALB:                                                         *
+c *   -------                                                          *
+c *                                                                    *
+c *   Parametros de entrada:                                           *
+c *   ---------------------                                            *
+c *                                                                    *
+c *    a(n) - vetor de dimensao n                                      *
+c *    b(n) - vetor de dimensao n                                      *
+c *    n    - dimensao                                                 *
+c *    ndf  - graus de liberdade                                       *
+c *                                                                    *
+c *   Parametros de saida:                                             *
+c *   -------------------                                              *
+c *                                                                    *
+c *   a = b                                                            *
+c *                                                                    *
+c **********************************************************************
+      implicit none
+      integer n,ndf,i,j
+      real*8 a(ndf,*),b(ndf,*)
+c ......................................................................
+      do i = 1, n
+        do j = 1, ndf
+          a(j,i) = b(j,i)
+        enddo 
+      enddo
+      return
+      end
+c **********************************************************************
+c 

@@ -522,6 +522,7 @@ c *********************************************************************
       include 'time.fi'
       real*8 ad(*),al(*),x(*),y(*),dum,t,thread_y(*),xi,s,s1,s2,s3
       integer ja(*),neq,i,j,k,ia(*),jak,inc,k1,k2,n,jak1,jak2,jak3
+      integer resto
 c ......................................................................
 c$omp single      
       matvectime = get_time() - matvectime
@@ -552,36 +553,48 @@ c
 c
          k1 = ia(i)
          k2 = ia(i+1)
-         if(k2 .eq. k1) goto 102
-         n = mod(k2-k1,4)
-         if(n .eq. 0) goto 101
-         jak1 = ja(k1)
-         t    =    t + al(k1)*x(jak1)
-         jak1 = jak1 + inc
-         thread_y(jak1) = thread_y(jak1) + al(k1)*xi
-         k1  = k1 + 1
-         if(k2 .eq. k1) goto 102
-         n = n - 1
-         if(n .eq. 0) goto 101
-         if(n .eq. 1) then
+         n  = k2 - k1
+         resto = mod(n,4)
+         goto(102,10,20,30) (resto + 1)
+c ... resto 1
+   10   continue
            jak1 = ja(k1)
-           t    = t + al(k1)*x(jak1)
+           s    = al(k1)
+           t    = t  + s*x(  jak1) 
            jak1 = jak1 + inc
-           thread_y(jak1) = thread_y(jak1) + al(k1)*xi
-           k1 = k1 + 1
-           if (k2 .eq. k1) goto 102
-         else
+           thread_y(jak1)  = thread_y(jak1 ) +  s*xi 
+           goto 101     
+c ... resto 2
+   20   continue
+           jak1 = ja(k1)
            jak2 = ja(k1+1)
-           t = t + al(k1)*x(jak1) + al(k1+1)*x(jak2)
+           s    = al(k1)
+           s1   = al(k1+1)
+           t    = t  + s*x(  jak1) + s1*x(jak2) 
            jak1 = jak1 + inc
            jak2 = jak2 + inc
-           thread_y(jak1) = thread_y(jak1) + al(k1)*xi
-           thread_y(jak2) = thread_y(jak2) + al(k1+1)*xi
-           k1 = k1 + 2
-           if (k2 .eq. k1) goto 102 
-         endif
+           thread_y(jak1)  = thread_y(jak1 ) +   s*xi     
+           thread_y(jak2)  = thread_y(jak2 ) +  s1*xi     
+           goto 101     
+c ... resto 3
+   30   continue
+           jak1 = ja(k1)
+           jak2 = ja(k1+1)
+           jak3 = ja(k1+2)
+           s    = al(k1)
+           s1   = al(k1+1)
+           s2   = al(k1+2)
+           t    = t + s*x(  jak1) + s1*x(jak2) 
+     .          +     s2*x(jak3) 
+           jak1 = jak1 + inc
+           jak2 = jak2 + inc
+           jak3 = jak3 + inc
+           thread_y(jak1)  = thread_y(jak1 ) +   s*xi     
+           thread_y(jak2)  = thread_y(jak2 ) +  s1*xi     
+           thread_y(jak3)  = thread_y(jak3 ) +  s2*xi
+           goto 101     
 c
-  101    do k = k1, k2-1,4
+  101    do k = k1+resto, k2-1,4
             jak  = ja(k)
             jak1 = ja(k+1)
             jak2 = ja(k+2)
@@ -687,8 +700,9 @@ c$omp barrier
       n    = mod(nrow,2)
       if( n .eq. 0 ) goto 10
 c ... produto para caso de numero de equacoes impar
-      xi = x(i0)
-      t  =ad(i0)*xi
+      y(i0) = 0.0d0
+      xi    = x(i0)
+      t     = ad(i0)*xi
       do k = ia(i0), ia(i0+1) - 1
         jak = ja(k)
         s   = al(k)
@@ -697,8 +711,8 @@ c ... produto para caso de numero de equacoes impar
         thread_y(jak) = thread_y(jak) + s*xi
       enddo 
       thread_y(i0+inc) = t
-      i0=i0+1
-  10  do i = i0, thread_end(thread_id),2
+c ......................................................................
+  10  do i = i0+n, thread_end(thread_id),2
          y(i)   = 0.d0
          y(i+1) = 0.d0
          xi    = x(i)
@@ -846,8 +860,9 @@ c$omp barrier
       n    = mod(nrow,2)
       if( n .eq. 0 ) goto 10
 c ... produto para caso de numero de equacoes impar
-      xi = x(i0)
-      t  =ad(i0)*xi
+      y(i0)= 0.0d0
+      xi   = x(i0)
+      t    = ad(i0)*xi
       do k = ia(i0), ia(i0+1) - 1
         jak = ja(k)
         s   = al(k)
@@ -856,8 +871,7 @@ c ... produto para caso de numero de equacoes impar
         thread_y(jak) = thread_y(jak) + s*xi
       enddo 
       thread_y(i0+inc) = t
-      i0=i0+1
-  10  do i = i0, thread_end(thread_id),2
+  10  do i = i0+n, thread_end(thread_id),2
          y(i)   = 0.d0
          y(i+1) = 0.d0
          xi    = x(i)
@@ -1014,19 +1028,389 @@ c **********************************************************************
 c ......................................................................
 c$omp single      
       dottime = get_time() - dottime
-      omp_dot    = 0.d0
+      omp_dot1    = 0.d0
 c$omp end single
 c ......................................................................
 c
-c$omp do reduction(+:omp_dot)     
+c$omp do reduction(+:omp_dot1)     
       do i = 1, n
-         omp_dot = omp_dot + a(i)*b(i)
+         omp_dot1 = omp_dot1 + a(i)*b(i)
       enddo
 c$omp enddo
 c$omp single 
       dottime = get_time() - dottime
 c$omp end single
-      dot_omp = omp_dot
+      dot_omp = omp_dot1
+c$omp barrier
+c ......................................................................    
+      return
+      end
+c **********************************************************************
+c
+c **********************************************************************
+      real*8 function dot_ompO2(a,b,n)
+c **********************************************************************
+c *                                                                    *
+c *   DOT_OMP: Produto escalar a.b                                     *
+c *                                                                    *
+c **********************************************************************
+      implicit none
+      include 'time.fi'
+      include 'openmp.fi'
+      integer n,i,resto
+      real*8  a(*),b(*)
+c ......................................................................
+      resto = mod(n,2)
+c$omp single      
+      dottime = get_time() - dottime
+      omp_dot1    = 0.d0
+      if(resto .eq. 1 ) omp_dot1 = a(1)*b(1)
+c$omp end single
+c ......................................................................
+c
+c$omp do reduction(+:omp_dot1)     
+      do i = 1+resto, n,2
+         omp_dot1 = omp_dot1 + a(i)*b(i) + a(i+1)*b(i+1)
+      enddo
+c$omp enddo
+c$omp single 
+      dottime = get_time() - dottime
+c$omp end single
+      dot_ompO2 = omp_dot1
+c$omp barrier
+c ......................................................................    
+      return
+      end
+c **********************************************************************
+c
+c **********************************************************************
+      real*8 function dot_ompO4(a,b,n)
+c **********************************************************************
+c *                                                                    *
+c *   DOT_OMP: Produto escalar a.b                                     *
+c *                                                                    *
+c **********************************************************************
+      implicit none
+      include 'time.fi'
+      include 'openmp.fi'
+      integer n,i,resto
+      real*8  a(*),b(*)
+c ......................................................................
+      resto = mod(n,4)
+c$omp single      
+      dottime     = get_time() - dottime
+      omp_dot1    = 0.0d0
+      goto(10,20,30,40) (resto + 1)
+   20 continue
+      omp_dot1    = a(1)*b(1)
+      goto 10
+   30 continue
+      omp_dot1    = a(1)*b(1) + a(2)*b(2)
+      goto 10
+   40 continue
+      omp_dot1    = a(1)*b(1) + a(2)*b(2) + a(3)*b(3)
+   10 continue
+c$omp end single
+c ......................................................................
+c
+c$omp do reduction(+:omp_dot1)     
+      do i = 1+resto,n,4
+         omp_dot1 = omp_dot1 
+     .            + a(i)*b(i)
+     .            + a(i+1)*b(i+1)
+     .            + a(i+2)*b(i+2)
+     .            + a(i+3)*b(i+3)
+      enddo
+c$omp enddo
+c$omp single 
+      dottime = get_time() - dottime
+c$omp end single
+      dot_ompO4 = omp_dot1
+c$omp barrier
+c ......................................................................    
+      return
+      end
+c **********************************************************************
+c
+c **********************************************************************
+      real*8 function dot_ompL2(a,b,n)
+c **********************************************************************
+c *                                                                    *
+c *   DOT_OMP: Produto escalar a.b                                     *
+c *                                                                    *
+c **********************************************************************
+      implicit none
+      include 'time.fi'
+      include 'openmp.fi'
+      integer n,i,resto
+      real*8  a(*),b(*)
+c ......................................................................
+      resto = mod(n,2)
+c$omp single      
+      dottime = get_time() - dottime
+      omp_dot1    = 0.d0
+      omp_dot2    = 0.d0
+      if( resto .eq. 1 ) omp_dot1    = a(1)*b(1)
+c$omp end single
+c ......................................................................
+c
+c$omp do reduction(+:omp_dot1,omp_dot2)     
+      do i = 1 + resto, n,2
+         omp_dot1 = omp_dot1 + a(i)*b(i)
+         omp_dot2 = omp_dot2 + a(i+1)*b(i+1)
+      enddo
+c$omp enddo
+c$omp single 
+      dottime = get_time() - dottime
+c$omp end single
+      dot_ompL2 = omp_dot1 + omp_dot2
+c$omp barrier
+c ......................................................................    
+      return
+      end
+c **********************************************************************
+c
+c **********************************************************************
+      real*8 function dot_ompL4(a,b,n)
+c **********************************************************************
+c *                                                                    *
+c *   DOT_OMP: Produto escalar a.b                                     *
+c *                                                                    *
+c **********************************************************************
+      implicit none
+      include 'time.fi'
+      include 'openmp.fi'
+      integer n,i,resto
+      real*8  a(*),b(*)
+c ......................................................................
+      resto = mod(n,4)
+c$omp single      
+      dottime = get_time() - dottime
+      omp_dot2    = 0.d0
+      omp_dot3    = 0.d0
+      omp_dot4    = 0.d0
+      goto(10,20,30,40) (resto+1)
+   10 continue
+      omp_dot1    = 0.d0
+      goto 5 
+   20 continue
+      omp_dot1    = a(1)*b(1)
+      goto 5
+   30 continue
+      omp_dot1    = a(1)*b(1) + a(2)*b(2)
+      goto 5
+   40 continue
+      omp_dot1    = a(1)*b(1) + a(2)*b(2) + a(3)*b(3)
+    5 continue
+c$omp end single
+c ......................................................................
+c
+c$omp do reduction(+:omp_dot1,omp_dot2,omp_dot3,omp_dot4)     
+      do i = 1 + resto, n,4
+         omp_dot1 = omp_dot1 + a(i)*b(i)
+         omp_dot2 = omp_dot2 + a(i+1)*b(i+1)
+         omp_dot3 = omp_dot3 + a(i+2)*b(i+2)
+         omp_dot4 = omp_dot4 + a(i+3)*b(i+3)
+      enddo
+c$omp enddo
+c$omp single 
+      dottime = get_time() - dottime
+c$omp end single
+      dot_ompL4 = omp_dot1 + omp_dot2 + omp_dot3 + omp_dot4
+c$omp barrier
+c ......................................................................    
+      return
+      end
+c **********************************************************************
+c
+c **********************************************************************
+      real*8 function dot_ompL6(a,b,n)
+c **********************************************************************
+c *                                                                    *
+c *   DOT_OMP: Produto escalar a.b                                     *
+c *                                                                    *
+c **********************************************************************
+      implicit none
+      include 'time.fi'
+      include 'openmp.fi'
+      integer n,i,resto
+      real*8  a(*),b(*)
+c ......................................................................
+      resto = mod(n,6)
+c$omp single      
+      dottime = get_time() - dottime
+      omp_dot2    = 0.d0
+      omp_dot3    = 0.d0
+      omp_dot4    = 0.d0
+      omp_dot5    = 0.d0
+      omp_dot6    = 0.d0
+      goto(10,20,30,40,50,60) (resto + 1)
+   10 continue
+      omp_dot1    = 0.d0
+      goto 5
+   20 continue
+      omp_dot1    = a(1)*b(1)
+      goto 5
+   30 continue
+      omp_dot1    = a(1)*b(1) + a(2)*b(2)
+      goto 5
+   40 continue
+      omp_dot1    = a(1)*b(1) + a(2)*b(2) + a(3)*b(3)
+      goto 5
+   50 continue
+      omp_dot1    = a(1)*b(1) + a(2)*b(2) + a(3)*b(3) + a(4)*b(4)
+      goto 5 
+   60 continue
+      omp_dot1    = a(1)*b(1) + a(2)*b(2) + a(3)*b(3) + a(4)*b(4)
+     .            + a(5)*b(5)
+    5 continue
+c$omp end single
+c ......................................................................
+c
+c$omp do 
+c$omp.reduction(+:omp_dot1,omp_dot2,omp_dot3,omp_dot4,omp_dot5,omp_dot6)     
+      do i = 1 + resto, n,6
+         omp_dot1 = omp_dot1 + a(i)*b(i)
+         omp_dot2 = omp_dot2 + a(i+1)*b(i+1)
+         omp_dot3 = omp_dot3 + a(i+2)*b(i+2)
+         omp_dot4 = omp_dot4 + a(i+3)*b(i+3)
+         omp_dot5 = omp_dot5 + a(i+4)*b(i+4)
+         omp_dot6 = omp_dot6 + a(i+5)*b(i+5)
+      enddo
+c$omp enddo
+c$omp single 
+      dottime = get_time() - dottime
+c$omp end single
+      dot_ompL6 = omp_dot1 + omp_dot2 + omp_dot3 + omp_dot4
+     .          + omp_dot5 + omp_dot6  
+c$omp barrier
+c ......................................................................    
+      return
+      end
+c **********************************************************************
+c
+c **********************************************************************
+      real*8 function dot_ompL8(a,b,n)
+c **********************************************************************
+c *                                                                    *
+c *   DOT_OMP: Produto escalar a.b                                     *
+c *                                                                    *
+c **********************************************************************
+      implicit none
+      include 'time.fi'
+      include 'openmp.fi'
+      integer n,i,resto
+      real*8  a(*),b(*)
+c ......................................................................
+      resto = mod(n,8)
+c$omp single      
+      dottime = get_time() - dottime
+      omp_dot2    = 0.d0
+      omp_dot3    = 0.d0
+      omp_dot4    = 0.d0
+      omp_dot5    = 0.d0
+      omp_dot6    = 0.d0
+      omp_dot7    = 0.d0
+      omp_dot8    = 0.d0
+      goto(10,20,30,40,50,60,70,80) (resto + 1)
+   10 continue
+      omp_dot1    = 0.d0
+      goto 5 
+   20 continue
+      omp_dot1    = a(1)*b(1)
+      goto 5
+   30 continue
+      omp_dot1    = a(1)*b(1) + a(2)*b(2)
+      goto 5 
+   40 continue
+      omp_dot1    = a(1)*b(1) + a(2)*b(2) + a(3)*b(3)
+      goto 5 
+   50 continue
+      omp_dot1    = a(1)*b(1) + a(2)*b(2) + a(3)*b(3) + a(4)*b(4)
+      goto 5 
+   60 continue
+      omp_dot1    = a(1)*b(1) + a(2)*b(2) + a(3)*b(3) + a(4)*b(4)
+     .            + a(5)*b(5)
+      goto 5 
+   70 continue
+      omp_dot1    = a(1)*b(1) + a(2)*b(2) + a(3)*b(3) + a(4)*b(4)
+     .            + a(5)*b(5) + a(6)*b(6)
+      goto 5 
+   80 continue
+      omp_dot1    = a(1)*b(1) + a(2)*b(2) + a(3)*b(3) + a(4)*b(4)
+     .            + a(5)*b(5) + a(6)*b(6) + a(7)*b(7)
+    5 continue
+c$omp end single
+c ......................................................................
+c
+c$omp do 
+c$omp.reduction(+:omp_dot1,omp_dot2,omp_dot3,omp_dot4,
+c$omp.omp_dot5,omp_dot6,omp_dot7,omp_dot8)     
+      do i = 1 + resto, n,8
+         omp_dot1 = omp_dot1 + a(i)*b(i)
+         omp_dot2 = omp_dot2 + a(i+1)*b(i+1)
+         omp_dot3 = omp_dot3 + a(i+2)*b(i+2)
+         omp_dot4 = omp_dot4 + a(i+3)*b(i+3)
+         omp_dot5 = omp_dot5 + a(i+4)*b(i+4)
+         omp_dot6 = omp_dot6 + a(i+5)*b(i+5)
+         omp_dot7 = omp_dot7 + a(i+6)*b(i+6)
+         omp_dot8 = omp_dot8 + a(i+7)*b(i+7)
+      enddo
+c$omp enddo
+c$omp single 
+      dottime = get_time() - dottime
+c$omp end single
+      dot_ompL8 = omp_dot1 + omp_dot2 + omp_dot3 + omp_dot4
+     .          + omp_dot5 + omp_dot6 + omp_dot7 + omp_dot8 
+c$omp barrier
+c ......................................................................    
+      return
+      end
+c **********************************************************************
+c
+c **********************************************************************
+      real*8 function dot_ompO2L2(a,b,n)
+c **********************************************************************
+c *                                                                    *
+c *   DOT_OMP: Produto escalar a.b                                     *
+c *                                                                    *
+c **********************************************************************
+      implicit none
+      include 'time.fi'
+      include 'openmp.fi'
+      integer n,i,resto
+      real*8  a(*),b(*)
+c ......................................................................
+      resto = mod(n,4)
+c$omp single      
+      dottime = get_time() - dottime
+      omp_dot2    = 0.d0
+      goto(10,20,30,40) (resto+1)
+   10 continue
+      omp_dot1    = 0.d0
+      goto 5 
+   20 continue
+      omp_dot1    = a(1)*b(1)
+      goto 5
+   30 continue
+      omp_dot1    = a(1)*b(1) + a(2)*b(2)
+      goto 5
+   40 continue
+      omp_dot1    = a(1)*b(1) + a(2)*b(2) + a(3)*b(3)
+    5 continue
+c$omp end single
+c ......................................................................
+c
+c$omp do reduction(+:omp_dot1,omp_dot2)     
+      do i = 1 + resto, n,4
+         omp_dot1 = omp_dot1 + a(i)*b(i)    + a(i+1)*b(i+1)
+         omp_dot2 = omp_dot2 + a(i+2)*b(i+2)+ a(i+3)*b(i+3)
+      enddo
+c$omp enddo
+c$omp single 
+      dottime = get_time() - dottime
+c$omp end single
+      dot_ompO2L2 = omp_dot1 + omp_dot2
 c$omp barrier
 c ......................................................................    
       return

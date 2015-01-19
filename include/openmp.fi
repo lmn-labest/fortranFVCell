@@ -1,5 +1,6 @@
 c$    include 'omp_lib.h'
-      real*8  omp_dot
+      real*8  omp_dot1,omp_dot2,omp_dot3,omp_dot4,omp_dot5,omp_dot6
+     .       ,omp_dot7,omp_dot8
       integer*8 i_threads_y
       logical openmpCell,openmpSolver
       integer max_num_threads,num_threads,
@@ -13,6 +14,7 @@ c    .        max_num_threads_available,
      .             thread_height(max_num_threads)
       common /omp_control/ num_threads,openmpCell,openmpSolver
      .                   ,nThreadsCell,nThreadsSolver
-      common /omp_dot    / omp_dot
+      common /omp_dot    / omp_dot1,omp_dot2,omp_dot3,omp_dot4
+     .                   , omp_dot5,omp_dot6,omp_dot7,omp_dot8
       common /omp_private/ thread_id
 c$omp threadprivate(/omp_private/)
