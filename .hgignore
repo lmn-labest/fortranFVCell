@@ -3,3 +3,6 @@ syntax: glob
 *.swp
 src/*.o
 lib/*.a
+bin/*.vtk
+bin/*.dat
+bin/*.txt

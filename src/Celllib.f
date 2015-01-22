@@ -135,6 +135,21 @@ c ... cell 2D simple - incompressivel (Edge-based-GGl-TVD)
      .                      ,bs)
         endif 
 c .....................................................................
+c
+c ... cell 2D simple - incompressivel (Wall-Model-Edge-based-GGl-TVD)
+      elseif(type .eq.  73 .or. type .eq. 75) then
+        if( lib .eq. 1) then
+          call cell_si_wm_eb_i_ggl(a,x,u,u0,u1,w,d,grad,grad1,grad2
+     .                         ,div,iM,fluxl,k,sp,p,sedge,dt
+     .                         ,pedge,viz,nshared,ndm,iws,iws1,nel,sn
+     .                         ,acod,Mp,bs)
+        elseif(lib .eq.2) then
+          call cell_si_p_i_ggl(a,x,un,u,u0,u1,w,d,grad,grad1,iM,fluxl,k
+     .                        ,sp,p,sedge,dt,pedge,viz,nshared,ndm,iws
+     .                        ,nel,sn,acod,bs)
+        elseif(lib .eq. 4) then
+        endif 
+c .....................................................................
       else
         write(*,2000)'celllib','Celllib.f',
      .               'Tipo de celula nao existente'
@@ -340,43 +355,43 @@ c ...
 c *********************************************************************
 c
 c *********************************************************************
-      subroutine errosol(u,error,x,ix,numel,nen,ndf,ndm,cod)
-      implicit none
-      logical cod
-      real*8 u(ndf,*),error(*),du(3),f(3),dot,x(ndm,*),xc(3)
-      integer ix(nen+1,*),numel,nen,ndf,ndm,nel,j,no,k
-      do nel = 1, numel
-         do k = 1, ndm
-           xc(k) = 0.d0
-         enddo  
+c     subroutine errosol(u,error,x,ix,numel,nen,ndf,ndm,cod)
+c     implicit none
+c     logical cod
+c     real*8 u(ndf,*),error(*),du(3),f(3),dot,x(ndm,*),xc(3)
+c     integer ix(nen+1,*),numel,nen,ndf,ndm,nel,j,no,k
+c     do nel = 1, numel
+c        do k = 1, ndm
+c          xc(k) = 0.d0
+c        enddo  
 c ... calculo do centroide            
-          do j = 1, nen
-            no = ix(j,nel)
-            do k = 1, ndm 
-              xc(k) = xc(k) + x(k,no)
-            enddo
-          enddo
+c         do j = 1, nen
+c           no = ix(j,nel)
+c           do k = 1, ndm 
+c             xc(k) = xc(k) + x(k,no)
+c           enddo
+c         enddo
 c ... Triangulo          
-          if( nen .eq. 3) then
-            do j = 1, ndm 
-              xc(j) = xc(j)/3.0d0
-            enddo
-          endif
+c         if( nen .eq. 3) then
+c           do j = 1, ndm 
+c             xc(j) = xc(j)/3.0d0
+c           enddo
+c         endif
 c ... Quadrilatero          
-          if( nen .eq. 4) then
-            do j = 1, ndm 
-              xc(j) = xc(j)*0.25d0
-            enddo
-          endif  
+c         if( nen .eq. 4) then
+c           do j = 1, ndm 
+c             xc(j) = xc(j)*0.25d0
+c           enddo
+c         endif  
 c .....................................................................    
-        call exectsol(f,xc,cod)
-        do j = 1, ndf
-          du(j) = u(j,nel) - f(j)
-        enddo
-        error(nel) = dsqrt(dot(du,du,ndf))/dsqrt(dot(f,f,ndf))
-      enddo
-      return
-      end
+c       call exectsol(f,xc,cod)
+c       do j = 1, ndf
+c         du(j) = u(j,nel) - f(j)
+c       enddo
+c       error(nel) = dsqrt(dot(du,du,ndf))/dsqrt(dot(f,f,ndf))
+c     enddo
+c     return
+c     end
 c *********************************************************************
 c 
 c *********************************************************************
@@ -541,6 +556,7 @@ c **********************************************************************
       integer icod
       real*8 eta(*),area,areatriacell,areaquadcell
       external areatriacell,areaquadcell
+      area = 0.0d0
       if(icod .eq. 3) then
         area = areatriacell(eta)
       elseif(icod .eq. 4) then
@@ -570,8 +586,8 @@ c **********************************************************************
       integer acod,type,sn(2,*)
 c ... celulas triagulares
       if(type .eq. 3  .or. type .eq. 13 .or. type .eq. 23 .or.
-     .   type .eq. 33 .or. type .eq. 43 .or. type .eq. 53 
-     .   .or. type .eq. 63) then
+     .   type .eq. 33 .or. type .eq. 43 .or. type .eq. 53 .or. 
+     .   type .eq. 63 .or. type .eq. 73) then
         sn(1,1) = 1
         sn(2,1) = 2
         sn(1,2) = 2
@@ -582,7 +598,7 @@ c ... celulas triagulares
 c ... celulas quadrilateras
       elseif(type .eq. 5  .or. type .eq. 7  .or. type .eq. 15 .or. 
      .       type .eq. 25 .or. type .eq. 35 .or. type .eq. 45 .or. 
-     .       type .eq. 55 .or. type .eq. 65) then
+     .       type .eq. 55 .or. type .eq. 65 .or. type .eq. 75) then
         sn(1,1) = 1
         sn(2,1) = 2
         sn(1,2) = 2
@@ -832,6 +848,47 @@ c **********************************************************************
       do i = 1, numel
         rot(i) = gradU2(1,i) - gradU1(2,i)
       enddo
+      return
+      end
+c ***********************************************************************   
+
+c **********************************************************************
+c * WALLMODEL : Modelo de parede                                       *
+c * ------------------------------------------------------------------ *
+c **********************************************************************
+      subroutine wallModel(yPlus,stressW,viscosity,specificMass,vt,dy
+     .                    ,nel)
+      implicit none
+      real*8 stressW,stressW0
+      real*8 fu,uPlus,yPlus
+      real*8 viscosity,vt,dy,specificMass
+      real*8, parameter ::vonKarman = 4.1d-1
+      real*8, parameter ::B         = 5.2d0
+      integer, parameter :: maxIt = 5
+      integer i,nel
+c ... wall shear stress (viscosidade)
+      stressW =  viscosity*vt/dy
+      do i = 1, maxIt
+c ... friction velocity
+        fu     = dsqrt(stressW/specificMass)
+c ...
+        yPlus = specificMass*fu*dy/viscosity
+c .....................................................................
+c 
+c ... 
+        if( yPlus .lt. 11.81d0) then
+          uPlus = yPlus
+        else
+          uPlus = (1.0d0/vonKarman)*dlog(yPlus) + B 
+        endif
+        stressW0 = stressW
+        stressW  = specificMass*(vt/uPLus)*(vt/uPLus)
+        if(dabs(stressW-stressW0) .lt. 1.0d-4) goto 100 
+      enddo
+  100 continue
+c     if(yPlus .gt. 11.81d0) then
+c       print*,stressW-stressW0,uPlus,yPlus,i
+c     endif
       return
       end
 c ***********************************************************************   
