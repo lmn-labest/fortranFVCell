@@ -1,0 +1,30 @@
+mesh
+nnode 10201 numel 10000 dim 2 ndf 0 ndfF 3 ndfE 0 maxno 4 numat 1
+materials
+1 65 1.0d-4 1.0d0 0.0 0.0 0.0d0 1.0d0 7 
+end matrials
+insert cav4.dat
+end mesh
+setelev 1.0
+#-------simple----------------
+itSimple 2500
+simpleC
+underU  1.0d0
+underPc 1.0d0
+tSimpU1 1.0d-6
+tSimpU2 1.0d-6
+tSimpPc 1.0d-6
+#tDinamic
+#------------------------------
+dt 0.01
+loop2 40
+  loop1 25
+    simple
+  next1
+  pveloc
+  ppres
+  pelev
+  save
+next2  
+stop
+

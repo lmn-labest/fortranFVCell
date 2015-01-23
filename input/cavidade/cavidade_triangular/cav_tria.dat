@@ -1,0 +1,31 @@
+config 
+memoria 100 openMpCell false nThreadsCell 1 openMpSolver false nThreadsSolver 1 reord false bvtk true
+end config
+mesh
+nnode 11923 numel 22644 dim 2 ndf 0 ndfF 3 ndfE 0 maxno 3 numat 1
+materials
+1 63 1.0d-3 1.0d0 0.0 0.0 0.0 0.0 7
+end materials
+insert cav_triang.dat
+insert cav_tria_restrain.dat
+end mesh
+#------------------
+itSimple 100
+#skewC
+simpleC
+underU  0.8d0
+underPc 0.9d0
+tSimpU1 1.0d-3
+tSimpU2 1.0d-3
+tSimpPc 1.0d-3
+#------------------
+pgeo
+simple
+pveloc
+ppres
+pdiv
+pgradP
+pgradU1
+pgradU2
+stop
+

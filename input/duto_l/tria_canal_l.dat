@@ -1,0 +1,33 @@
+config
+memoria 100 openMpCell true nThreadsCell 2 openMpSolver true nThreadsSolver 2 reord false bvtk true
+end config
+mesh
+nnode 42382 numel 79872 ndf 0 ndfE 0 ndfF 3  numat 1 maxno 3 dim 2
+materials
+1 63 2.0d-1 1.0d0 0.00 0.0 0.0 0.0 7
+end materials
+insert tria_canal_l_coor.dat
+insert tria_canal_l_elem.dat
+insert tria_canal_l_restricion.dat
+end mesh
+simpleC
+underPc 1.0d0
+underU  0.6d0
+itSimple 2000
+tSimpU1 1.0e-4
+tSimpU2 1.0e-4
+tSimpPc 1.0e-4
+pgeo
+#tDinamic
+#----------------------------------------------
+#dt 0.025 
+#loop2 200 
+#  loop1  20
+     simple
+#  next1
+  pveloc
+  ppres
+  pelev
+#  save
+#next2
+stop

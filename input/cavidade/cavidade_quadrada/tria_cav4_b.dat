@@ -1,0 +1,33 @@
+config
+memoria 100 openMpCell true nThreadsCell 2 openMpSolver true nThreadsSolver 2 reord false bvtk true
+end config
+mesh
+nnode 8288 numel 15934 ndf 0 ndfF 3 ndfE 0 numat 1 maxno 3 dim 2
+materials
+1 63 1.0d-3 1.0d0 0.0 0.0 0.0 0.0 7
+end materials
+insert tria_cav4_b_coor.dat
+insert tria_cav4_b_elem.dat
+insert tria_cav4_b_restricion.dat
+end mesh
+#------
+simpleC
+underPc 1.0d0
+underU  0.9d0
+itSimple 5000
+tSimpU1 1.0e-6
+tSimpU2 1.0e-6
+tSimpPc 1.0e-6
+#tDinamic
+#------
+#dt 0.005
+#loop2 40
+#  loop1 50
+    simple
+#  next1
+  pveloc
+  ppres
+  pdiv
+  pelev
+#next2
+stop

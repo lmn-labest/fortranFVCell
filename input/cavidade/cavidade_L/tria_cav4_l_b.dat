@@ -1,0 +1,29 @@
+mesh
+nnode 10735 numel 20668 ndf 0 ndfE 0 ndfF 3 numat 1 maxno 3 dim 2
+materials
+1 63 2.d-2 1.d0 0.0 0.0 0.0 1.0 7
+end materials
+insert tria_cav4_l_b_coor.dat
+insert tria_cav4_l_b_elem.dat
+insert tria_cav4_l_b_restricion.dat
+end mesh
+#---------------------------------------------
+simpleC
+underPc 1.0d0
+underU  0.9d0
+itSimple 5000
+tSimpU1 1.0e-6
+tSimpU2 1.0e-6
+tSimpPc 1.0e-6
+#tDinamic
+#----------------------------------------------
+dt 0.005
+loop2 100 
+  loop1 10
+    simple
+  next1
+  pveloc
+  ppres
+  pelev
+next2
+stop
