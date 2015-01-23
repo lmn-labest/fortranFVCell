@@ -18,10 +18,10 @@ c * ----------------------------------------------------------------- *
 c * y    - vetor com a operacao Ax                                    *
 c * ----------------------------------------------------------------- *
 c *********************************************************************
-      subroutine matvec_csrd_omp(ad,a,dum,x,y,ia,ja,neq)
+      subroutine matvec_csrd_omp(ad,a,dum,x,y,ia,ja,neq,dum1)
       implicit none
       include 'time.fi'
-      real*8 ad(*),a(*),x(*),y(*),dum,t
+      real*8 ad(*),a(*),x(*),y(*),dum,dum1,t
       integer ja(*),neq,i,j,ia(*)
 c ......................................................................
 c
@@ -74,10 +74,10 @@ c * ----------------------------------------------------------------- *
 c * y    - vetor com a operacao Ax                                    *
 c * ----------------------------------------------------------------- *
 c *********************************************************************
-      subroutine matvec_csrd_ilu2_omp(ad,a,dum,x,y,ia,ja,neq)
+      subroutine matvec_csrd_ilu2_omp(ad,a,dum,x,y,ia,ja,neq,dum1)
       implicit none
       include 'time.fi'
-      real*8 ad(*),a(*),x(*),y(*),dum,t
+      real*8 ad(*),a(*),x(*),y(*),dum,dum1,t
       integer ja(*),neq,i,j,ia(*),k1,k2,n
 c ......................................................................
 c
@@ -137,10 +137,10 @@ c * ----------------------------------------------------------------- *
 c * y    - vetor com a operacao Ax                                    *
 c * ----------------------------------------------------------------- *
 c *********************************************************************
-      subroutine matvec_csrd_ilu4_omp(ad,a,dum,x,y,ia,ja,neq)
+      subroutine matvec_csrd_ilu4_omp(ad,a,dum,x,y,ia,ja,neq,dum1)
       implicit none
       include 'time.fi'
-      real*8 ad(*),a(*),x(*),y(*),dum,t
+      real*8 ad(*),a(*),x(*),y(*),dum,dum1,t
       integer ja(*),neq,i,j,ia(*),k1,k2,n
 c ......................................................................
 c
@@ -213,10 +213,10 @@ c * ----------------------------------------------------------------- *
 c * y    - vetor com a operacao Ax                                    *
 c * ----------------------------------------------------------------- *
 c *********************************************************************
-      subroutine matvec_csrd_ilo2_ilu2_omp(ad,a,dum,x,y,ia,ja,neq)
+      subroutine matvec_csrd_ilo2_ilu2_omp(ad,a,dum,x,y,ia,ja,neq,dum1)
       implicit none
       include 'time.fi'
-      real*8 ad(*),a(*),x(*),y(*),dum,t,t1
+      real*8 ad(*),a(*),x(*),y(*),dum,dum1,t,t1
       integer ja(*),neq,i,j,ia(*),k1,k2,k3,n,nn,i0
 c ......................................................................
 c

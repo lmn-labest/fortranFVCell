@@ -35,7 +35,7 @@ c *********************************************************************
       real*8 au(*),al(*),ad(*),x(*),b(*)
       real*8 r(*),z(*),m(*),thread_y(*)
       real*8 d,conv,tol,alpha,beta,energy
-      real*8 dot,dx
+      real*8 dot
       integer neq,ia(*),ja(*)
       integer i,j,maxit,nad,nlit
       logical init
@@ -167,7 +167,7 @@ c .....................................................................
       integer neq,maxit,nad,i,j,nlit
       integer ja(*),ia(*)
       real*8  ad(*),au(*),al(*),m(*),x(*),r(*),p(*),b(*),t(*),v(*),z(*)
-      real*8  dot,tol,conv,energy,d,alpha,beta,rr0,w
+      real*8  dot,tol,conv,energy,d,alpha,beta,rr0,w,dum
       logical init
       external dot,matvec
 c ======================================================================
@@ -188,7 +188,7 @@ c$omp do
 c$omp end do
       endif
 c ----------------------------------------------------------------------
-      call matvec(ad,au,al,x,z,ia,ja,neq)
+      call matvec(ad,au,al,x,z,ia,ja,neq,dum)
 c$omp do
       do i = 1, neq
          r(i) = b(i) - z(i)
@@ -201,7 +201,7 @@ c$omp enddo
       conv = tol*dsqrt(dabs(d))
 c ----------------------------------------------------------------------
       do j = 1, maxit
-         call matvec(ad,au,al,z,v,ia,ja,neq)
+         call matvec(ad,au,al,z,v,ia,ja,neq,dum)
          rr0 = dot(b,r,neq)
          alpha = rr0/dot(v,r,neq)
 c$omp do
@@ -211,7 +211,7 @@ c$omp do
             z(i) = b(i) / m(i)
          enddo
 c$omp enddo
-         call matvec(ad,au,al,z,t,ia,ja,neq)
+         call matvec(ad,au,al,z,t,ia,ja,neq,dum)
          w = dot(t,b,neq) / dot(t,t,neq)
 c$omp do
          do i = 1, neq
@@ -238,7 +238,7 @@ c$omp end single
 c
 c ... Energy norm:
 c
-      call matvec(ad,au,al,x,z,ia,ja,neq)
+      call matvec(ad,au,al,x,z,ia,ja,neq,dum)
       energy   = dot(x,z,neq)
 c ......................................................................
 c$omp single

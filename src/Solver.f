@@ -13,6 +13,7 @@ c * iax    - ponteiro do arranjo do csr da matrix A                   *
 c * ja     - arranjo csr da matriz A                                  *
 c * neq    - numero de equacoes                                       *
 c * nad    - numero de elementos nao nulos fora da diagonal principal *
+c * unsym  - matriz armazenada na forma nao simenteria                *
 c * tol    - tolerancia do solver                                     *
 c * maxit  - numero maximo de iteracao do solver                      *
 c * code   - 1 CG                                                     *     
@@ -59,19 +60,21 @@ c ... dot
       external dot_ompO2,dot_ompO4,dot_ompO6
       external dot_ompO2L2
       k = 15
-c ... buffer para Csr simetrico 
+c ... buffer para Csr simetrico
+      i_threads_y = 1 
       if(openmpSolver .and. (.not. unsym)) then  
         i_threads_y  = alloc_8('buffer_y',nThreadsSolver,neq)
         call partition_matrix(iax,ja,neq)
       endif
 c ....................................................................
+c
 c ... PCG
       if( code .eq. 1) then
-        if(unsym) then
-          write(*,2000)'Solver','Solver.f'
-     .         ,'PCG nao trabalha com matriz nao simetrica'
-          stop
-        endif
+c       if(unsym) then
+c         write(*,2000)'Solver','Solver.f'
+c    .         ,'PCG nao trabalha com matriz nao simetrica'
+c         stop
+c       endif
         i_r         = alloc_8('r       ',  1,neq)
         i_z         = alloc_8('z       ',  1,neq)
         i_m         = alloc_8('m       ',  1,neq)
@@ -85,18 +88,37 @@ c ... CSRD
         if(matriz .eq. 1) then
 c ... OPENMP
           if(openmpSolver) then
-            call pcg_omp(neq,nad,iax,ja,ad,au,al,ia(i_m),b,x,ia(i_z)
+c ...
+            if(unsym) then
+              call pcg_omp(neq,nad,iax,ja,ad,au,al,ia(i_m),b,x,ia(i_z)
 c ... comum     
-     .                  ,ia(i_r),tol,maxit,matvec_csrd_sym_omp
+     .                   ,ia(i_r),tol,maxit,matvec_csrd_omp
 c ... loop interno desenrolado 2     
-c    .                  ,ia(i_r),tol,maxit,matvec_csrd_sym_ilu2_omp
+c    .                  ,ia(i_r),tol,maxit,matvec_csrd_ilu2_omp
 c ... loop interno desenrolado 4      
-c    .                  ,ia(i_r),tol,maxit,matvec_csrd_sym_ilu4_omp
+c    .                  ,ia(i_r),tol,maxit,matvec_csrd_ilu4_omp
 c ... loop externo desenrolado 2 / loop interno desenrolado 2      
-c    .                  ,ia(i_r),tol,maxit,matvec_csrd_sym_ilo2_ilu2_omp
+c    .                  ,ia(i_r),tol,maxit,matvec_csrd_ilo2_ilu2_omp
 c ... loop externo desenrolado 2 / loop interno desenrolado 4      
-c    .                  ,ia(i_r),tol,maxit,matvec_csrd_sym_ilo2_ilu4_omp
      .                  ,dot_ompL4,ia(i_threads_y),nlit,.false.)
+c ....................................................................
+c
+c ...
+            else
+              call pcg_omp(neq,nad,iax,ja,ad,au,al,ia(i_m),b,x,ia(i_z)
+c ... comum     
+     .                    ,ia(i_r),tol,maxit,matvec_csrd_sym_omp
+c ... loop interno desenrolado 2     
+c    .                    ,ia(i_r),tol,maxit,matvec_csrd_sym_ilu2_omp
+c ... loop interno desenrolado 4      
+c    .                    ,ia(i_r),tol,maxit,matvec_csrd_sym_ilu4_omp
+c ... loop externo desenrolado 2 / loop interno desenrolado 2      
+c    .                    ,ia(i_r),tol,maxit,matvec_csrd_sym_ilo2_ilu2_omp
+c ... loop externo desenrolado 2 / loop interno desenrolado 4      
+c    .                    ,ia(i_r),tol,maxit,matvec_csrd_sym_ilo2_ilu4_omp
+     .                    ,dot_ompL4,ia(i_threads_y),nlit,.false.)
+c .....................................................................
+            endif
 c .....................................................................
 c
 c ... sequencial          
@@ -148,9 +170,9 @@ c ... OPENMP
      .                          ,ia(i_t),ia(i_v),ia(i_r),ia(i_p),ia(i_z)
      .                          ,tol,maxit
 c ... matvec comum
-     .                          ,matvec_csrd_omp
+c    .                          ,matvec_csrd_omp
 c ... loop interno desenrolado 2   
-c    .                          ,matvec_csrd_ilu2_omp
+     .                          ,matvec_csrd_ilu2_omp
 c ... loop interno desenrolado 4   
 c    .                          ,matvec_csrd_ilu4_omp
 c ... loop externo desenrolado 2 / loop interno desenrolado 2  

@@ -1095,8 +1095,8 @@ c **********************************************************************
       real*8 viscosity,specificMassA,rm,iM(4,nshared+1) 
       real*8 a(*),sp,xc(3,5),x(ndm,nshared,nshared+1),dfd,nk,um(4),cd
       real*8 sedge(3,nshared+1),ksi(3,4),eta(3,4),n(3,4),meta(4)
-      real*8 mksi(4),area(5),ap,u0(5),u1(5),yPlus
-      real*8 stressW
+      real*8 mksi(4),area(5),ap,u0(5),u1(5)
+      real*8 stressW(4),yPLus(4)
       real*8 u(5),ca(4),alpha,k(10,*),xm(3,4),grad(ndm,*)
       real*8 eps,cfl,re,ug(4),xcg(3,4),kf,div(5)
       real*8 gradP(ndm,*),gradU1(ndm,*)
@@ -1130,7 +1130,8 @@ c ... propriedeade da celula
       specificMassA=  k(2,idCell)
       cc           =  k(6,idCell)
       icod         =  k(7,idCell)
-      vm     = dsqrt(w(1,idCell)*w(1,idCell) + w(2,idCell)*w(2,idCell))
+      vm           = dsqrt(w(1,idCell)*w(1,idCell) 
+     .                   + w(2,idCell)*w(2,idCell))
       if( iws1 .eq. 7) goto 700
 c .....................................................................
 c
@@ -1176,13 +1177,33 @@ c ...
 c .....................................................................
 c
   100 continue
+c ... calculo de yPLus e Tensao da parede
+      do i = 1, nshared
+        viznel = viz(i)
+        yPLus(i)   = 0.0d0
+        stressW(i) = 0.0d0
+c ...
+        if( viznel .lt. 0) then
+          if(pedge(i) .eq. 0 ) then
+c ... velocidade tangencial a face
+            wfn = dabs(w(1,idCell)*eta(1,i) + w(2,idCell)*eta(2,i))
+            if(wfn .ne. 0.0d0) then
+              call wallModel(yPlus(i)     ,stressW(i),viscosity
+     .                      ,specificMassA,wfn      ,ca(i),nel)
+            endif
+          endif
+        endif
+c .....................................................................
+      enddo
+c .....................................................................
+c
 c ...
       p            = 0.d0
       pf           = 0.d0
       sp           = 0.d0
       cd           = 0.d0
       cvc          = 0.d0
-      do i = 1, nshared
+      loopCell: do i = 1, nshared
         viznel = viz(i)
 c ... condicao de contorno      
         if( viznel .lt. 0) then
@@ -1215,27 +1236,20 @@ c .....................................................................
 c
 c ... parade  
           if(pedge(i) .eq. 0 ) then
-c ... velocidade tangencial a face
-            wfn = dabs(w(1,idCell)*eta(1,i) + w(2,idCell)*eta(2,i))
-            yPLus = 0.0d0
-            if(wfn .ne. 0.0d0) then
-              call wallModel(yPlus,stressW,viscosity,specificMassA,wfn
-     .                      ,ca(i),nel)
-            endif
-            if( yPlus .lt.  11.81d0) then
+            if( yPlus(i) .lt.  11.81d0) then
                ap = viscosity*meta(i)/ca(i)
                sp = sp + ap
             else
 c ... sinal  
-             wfn = w(1,idCell)*eta(1,i) + w(2,idCell)*eta(2,i)
-             if(wfn .gt. 0.0d0) then
-               stressW = -stressW*eta(iws2,i)*meta(i)
-             else
-               stressW =  stressW*eta(iws2,i)*meta(i)
-             endif
-c            print*,yPlus,stressW,w(iws2,idCell),wfn,eta(iws2,i),nel
-             p  = p + stressW
-          endif
+              wfn = w(1,idCell)*eta(1,i) + w(2,idCell)*eta(2,i)
+              if(wfn .gt. 0.0d0) then
+                stressW(i) = -stressW(i)*eta(iws2,i)*meta(i)
+              else
+                stressW(i) =  stressW(i)*eta(iws2,i)*meta(i)
+              endif
+c             print*,yPlus,stressW,w(iws2,idCell),wfn,eta(iws2,i),nel
+              p  = p + stressW(i)
+            endif
 c ... parade movel 
           else if(pedge(i) .eq. 1) then
             ap = viscosity*meta(i)/ca(i)
@@ -1350,7 +1364,7 @@ c ... termos nao lineares da viscosidade
             p     = p + kf*meta(i)*(gf(1)*n(2,i) + gf(2)*n(1,i))
           endif
         endif
-      enddo
+      enddo loopCell
 c .....................................................................
 c
 c ... 

@@ -198,12 +198,12 @@ c ... simple
       underRo            = 1.0d0
       cPc0               = 1.0d0
       cPc                = 1.0d0  
-      simpleC            =.false.
-      unsymPc            =.false.
-      vMass              =.false.
-      tDinamico          =.false.
-      closed             =.false.
-      singularPressure   =.false.
+      simpleC            = .false.
+      unsymPc            = .true.
+      vMass              = .false.
+      tDinamico          = .false.
+      closed             = .false.
+      singularPressure   = .false.
       maxItSimple        = 200
       solvSimplePc       = 1.0d-6
       solvSimpleU1       = 1.0d-6
@@ -1840,7 +1840,7 @@ c ......................................................................
  5200 continue
       print*, 'Macro BENCH'
       call benchmarkDot(openmpSolver,neqPc,nThreadsSolver)
-      call benchmarkCsr(openmpSolver,.false.
+      call benchmarkCsr(openmpSolver,unsymPc
      .                 ,ia(i_iaPc),ia(i_jaPc)
      .                 ,ia(i_alPc),ia(i_adPc),ia(i_auPc)
      .                 ,neqPc     ,nadPc     ,nThreadsSolver)

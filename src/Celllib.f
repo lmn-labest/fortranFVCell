@@ -855,6 +855,20 @@ c ***********************************************************************
 c **********************************************************************
 c * WALLMODEL : Modelo de parede                                       *
 c * ------------------------------------------------------------------ *
+c * Parametros de entrada:                                             *
+c * -------------------------------------------------------------------*
+c * yPLus        - indefinido                                          *
+c * stressW      - indefinido                                          *
+c * viscosity    - viscosidade molecular                               *
+c * specificMass - massa especifica                                    *
+c * vt           - modulo da velocidade tagencial                      *
+c * dy           - distancia da pareda ao centro da celula             *
+c * nel          - numero da celula                                    *
+c * -------------------------------------------------------------------*
+c * Parmetros de saida:                                                *
+c * -------------------------------------------------------------------*
+c * yPLus        - distancia nao dimensional da parede                 *
+c * stressW      - tensao na parede                                    *
 c **********************************************************************
       subroutine wallModel(yPlus,stressW,viscosity,specificMass,vt,dy
      .                    ,nel)
@@ -862,12 +876,12 @@ c **********************************************************************
       real*8 stressW,stressW0
       real*8 fu,uPlus,yPlus
       real*8 viscosity,vt,dy,specificMass
-      real*8, parameter ::vonKarman = 4.1d-1
-      real*8, parameter ::B         = 5.2d0
-      integer, parameter :: maxIt = 5
+      real*8 , parameter :: vonKarman = 0.4187d0
+      real*8 , parameter :: E         = 9.793d0
+      integer, parameter :: maxIt     = 100
       integer i,nel
 c ... wall shear stress (viscosidade)
-      stressW =  viscosity*vt/dy
+      stressW  =  viscosity*vt/dy
       do i = 1, maxIt
 c ... friction velocity
         fu     = dsqrt(stressW/specificMass)
@@ -879,15 +893,15 @@ c ...
         if( yPlus .lt. 11.81d0) then
           uPlus = yPlus
         else
-          uPlus = (1.0d0/vonKarman)*dlog(yPlus) + B 
+          uPlus = (1.0d0/vonKarman)*dlog(E*yPlus)  
         endif
         stressW0 = stressW
         stressW  = specificMass*(vt/uPLus)*(vt/uPLus)
-        if(dabs(stressW-stressW0) .lt. 1.0d-4) goto 100 
+        if(dabs(stressW-stressW0) .lt. 1.0d-14) goto 100 
       enddo
   100 continue
 c     if(yPlus .gt. 11.81d0) then
-c       print*,stressW-stressW0,uPlus,yPlus,i
+c       print*,stressW,stressW0,uPlus,yPlus,i,dy
 c     endif
       return
       end
