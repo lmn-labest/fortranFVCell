@@ -34,12 +34,10 @@ c *********************************************************************
       include 'error.fi'
 c ... ponteiros
       logical unsym
-      integer*8 i_r,i_z,i_m,i_t,i_v,i_p,i_y,i_sx
+      integer*8 i_r,i_z,i_m,i_t,i_v,i_p,i_y
       real*8 ad(*),al(*),au(*),x(*),b(*),tol
-      integer iax(*),ja(*),maxit,neq,nad,nl,k,code,matriz
+      integer iax(*),ja(*),maxit,neq,nad,k,code,matriz
       integer nlit
-
-      integer ier
 c ... nao simetricos  
       external matvec_csrd,matvec_csr,matvec_csrc
       external matvec_csrd_omp
@@ -100,7 +98,7 @@ c    .                  ,ia(i_r),tol,maxit,matvec_csrd_ilu4_omp
 c ... loop externo desenrolado 2 / loop interno desenrolado 2      
 c    .                  ,ia(i_r),tol,maxit,matvec_csrd_ilo2_ilu2_omp
 c ... loop externo desenrolado 2 / loop interno desenrolado 4      
-     .                  ,dot_ompL4,ia(i_threads_y),nlit,.false.)
+     .                  ,dot_ompL6,ia(i_threads_y),nlit,.false.)
 c ....................................................................
 c
 c ...
@@ -123,8 +121,16 @@ c .....................................................................
 c
 c ... sequencial          
           else
-            call pcg(neq,nad,iax,ja,ad,au,al,ia(i_m),b,x,ia(i_z)
-     .              ,ia(i_r),tol,maxit,matvec_csrd_sym,dot,nlit,.true.)
+            if(unsym) then
+              call pcg(neq,nad,iax,ja,ad,au,al,ia(i_m),b,x,ia(i_z)
+     .                ,ia(i_r),tol,maxit,matvec_csrd    
+     .                ,dot,nlit,.true.)
+            else
+              call pcg(neq,nad,iax,ja,ad,au,al,ia(i_m),b,x,ia(i_z)
+     .                ,ia(i_r),tol,maxit,matvec_csrd_sym
+     .                ,dot,nlit,.true.)
+            endif
+c .....................................................................
           endif
 c .....................................................................
 c

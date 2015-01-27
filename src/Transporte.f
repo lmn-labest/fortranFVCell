@@ -50,7 +50,7 @@ c ...
      .          ,gradT1,gradT1,gradT1
      .          ,fluxlT1,fluxlT1,fluxlT1,rO
      .          ,w,bT10,rCt1,x
-     .          ,sedgeT1,e,fluxlT1,ie,nelcon
+     .          ,sedgeT1,e,fluxlT1,fluxlT1,ie,nelcon
      .          ,pedgeT1,ix
      .          ,numel,ndm,nen,nen,ndfT1,ndfT1,dt
      .          ,0.0d0,matrizT1,unsymT1,4,1,4,.true.,.false.
@@ -77,7 +77,7 @@ c ... momtagem do sistema At=F
      .            ,gradT1,gradT1,gradT1
      .            ,fluxlT1,fluxlT1,fluxlT1,rO
      .            ,w,bT1,rCt1,x
-     .            ,sedgeT1,e,fluxlT1,ie,nelcon
+     .            ,sedgeT1,e,fluxlT1,fluxlT1,ie,nelcon
      .            ,pedgeT1,ix
      .            ,numel,ndm,nen,nen,ndfT1,ndfT1,dt
      .           ,0.0d0,matrizT1,unsymT1,1,1,4,.true.,.true.

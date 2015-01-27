@@ -4,64 +4,78 @@ c * velocidade                                                        *
 c * ----------------------------------------------------------------- *
 c * Parametros de entrada :                                           *
 c * ----------------------------------------------------------------- *
-c * x      - coordenadas nodais                                       *
-c * ix     - conectividade dos elementos                              *
-c * e      - propriedade                                              *
-c * ie     - tipo do elemento do material                             *
-c * nelcon - vizinho por celula                                       *
-c * pedge  - tipo de condicao de contorno u1,u2,p                     *
-c * sedge  - condicoes de contorno nas arestas u1,u2,p                *
-c * pedgeE - tipo de condicao de contorno E                           *
-c * sedgeE - condicoes de contorno nas arestas  E                     *
-c * w      - campo de velocidade por celula (n-1)                     *
-c * w0     - campo de velocidade por celula (n-2)                     *
-c * wP     - campo de velocidade por celula auxiliar                  *
-c * num    - numeracao dos celulas                                    *
-c * ls     - reconstrucao de gradiente least square                   *
-c * gradU1 - gradiente u1 da celula                                   *
-c * gradU2 - gradiente u2 da celula                                   *
-c * gradPc - gradiente pC da celula                                   *
-c * gradP  - gradiente p da celula                                    *
-c * gradE  - gradiente E da celula                                    *
-c * div    - divergente da velocidade                                 *
-c * mP     - parametros da equacao de momentos(cfl,Reynalds)          *
-c * fluxlU1- limitador do fluxo                                       *
-c * fluxlU2- limitador do fluxo                                       *
-c * fluxlPc- limitador do fluxo                                       *
-c * fluxlP - limitador do fluxo                                       *
-c * fluxlE - limitador do fluxo                                       *
-c * rCu1   - residuo o celula u1                                      *
-c * rCu2   - residuo o celula u2                                      *
-c * rCPc   - residuo o celula Pc                                      *
-c * rCE    - residuo o celula E                                       *
-c * adU1   - matriz Au                                                *
-c * auU1   - matriz Au                                                *
-c * alU1   - matriz Au                                                *
-c * bU1    - vetor de forcas bU1                                      *
-c * bU10   - vetor de forcas bU1                                      *
-c * iaU1   - ponteiro do para o csr                                   *
-c * jaU1   - estrutura do csr                                         *
-c * adU2   - matriz Av                                                *
-c * auU2   - matriz Av                                                *
-c * alU2   - matriz Av                                                *
-c * bU2    - vetor de forcas bU2                                      *
-c * bU20   - vetor de forcas bU2                                      *
-c * iaU2   - ponteiro do para o csr                                   *
-c * jaU2   - estrutura do csr                                         *
-c * adPc   - matriz ApC                                               *
-c * auPc   - matriz ApC                                               *
-c * alPc   - matriz ApC                                               *
-c * bPc    - vetor de forcas bPc                                      *
-c * iaPc   - ponteiro do para o csr                                   *
-c * jaPc   - estrutura do csr                                         *
-c * adE    - matriz Ae                                                *
-c * auE    - matriz Ae                                                *
-c * alE    - matriz Ae                                                *
-c * bE     - vetor de forcas bE                                       *
-c * bE0    - vetor de forcas bE                                       *
-c * iaE    - ponteiro do para o csr                                   *
-c * jaE    - estrutura do csr                                         *
-c * sx     - arronjo para guardar a solucao do sistemas lineares      *
+c * x        - coordenadas nodais                                     *
+c * ix       - conectividade dos elementos                            *
+c * e        - propriedade                                            *
+c * ie       - tipo do elemento do material                           *
+c * nelcon   - vizinho por celula                                     *
+c * pedge    - tipo de condicao de contorno u1,u2,p                   *
+c * sedge    - condicoes de contorno nas arestas u1,u2,p              *
+c * pedgeE   - tipo de condicao de contorno E                         *
+c * sedgeE   - condicoes de contorno nas arestas  E                   *
+c * w        - campo de velocidade por celula (n-1)                   *
+c * w0       - campo de velocidade por celula (n-2)                   *
+c * wP       - campo de velocidade por celula auxiliar                *
+c * num      - numeracao dos celulas                                  *
+c * ls       - reconstrucao de gradiente least square                 *
+c * gradU1   - gradiente u1 da celula                                 *
+c * gradU2   - gradiente u2 da celula                                 *
+c * gradP    - gradiente p da celula                                  *
+c * gradPc   - gradiente pC da celula                                 *
+c * gradE    - gradiente E da celula                                  *
+c * div      - divergente da velocidade                               *
+c * mP       - parametros da equacao de momentos(cfl,Reynalds)        *
+c * iM       - interpolaco do momentos                                *
+c * fluxlU1  - limitador do fluxo                                     *
+c * fluxlU2  - limitador do fluxo                                     *
+c * fluxlPc  - limitador do fluxo                                     *
+c * fluxlE   - limitador do fluxo                                     *
+c * rCu1     - residuo o celula u1                                    *
+c * rCu2     - residuo o celula u2                                    *
+c * rCPc     - residuo o celula Pc                                    *
+c * rCE      - residuo o celula E                                     *
+c * adU1     - matriz Au                                              *
+c * auU1     - matriz Au                                              *
+c * alU1     - matriz Au                                              *
+c * bU1      - vetor de forcas bU1                                    *
+c * bU10     - vetor de forcas bU1                                    *
+c * iaU1     - ponteiro do para o csr                                 *
+c * jaU1     - estrutura do csr                                       *
+c * adU2     - matriz Av                                              *
+c * auU2     - matriz Av                                              *
+c * alU2     - matriz Av                                              *
+c * bU2      - vetor de forcas bU2                                    *
+c * bU20     - vetor de forcas bU2                                    *
+c * iaU2     - ponteiro do para o csr                                 *
+c * jaU2     - estrutura do csr                                       *
+c * adPc     - matriz ApC                                             *
+c * auPc     - matriz ApC                                             *
+c * alPc     - matriz ApC                                             *
+c * bPc      - vetor de forcas bPc                                    *
+c * iaPc     - ponteiro do para o csr                                 *
+c * jaPc     - estrutura do csr                                       *
+c * adE      - matriz Ae                                              *
+c * auE      - matriz Ae                                              *
+c * alE      - matriz Ae                                              *
+c * bE       - vetor de forcas bE                                     *
+c * bE0      - vetor de forcas bE                                     *
+c * iaE      - ponteiro do para o csr                                 *
+c * jaE      - estrutura do csr                                       *
+c * u1       - velocidade u1                                          *
+c * u2       - velocidade u2                                          *
+c * p        - pressao                                                *
+c * pC       - pressao de correcao                                    *
+c * pC1      - segunda pressao de correcao                            *
+c * en       - energia                                                *
+c * en0      - energia 0                                              *
+c * r0       - massa especifica variavel                              *
+c * un       - nao definido variavel qualquer por no                  *
+c * mdf      - usado para interpolacap simples das variaveis          *
+c * md       - usado para interpolacap simples das variaveis          *
+c * ddu      - campo d usado no simple                                *
+c * temp     - temperatura                                            *
+c * sx       - arronjo para guardar a solucao do sistemas lineares    *
+c * eddyVisc - arronjo para guardar a solucao do sistemas lineares    *
 c * numel  - numero de celula                                         *
 c * ndm    - numero de dimensoes                                      *
 c * nen    - numero de nos por celula                                 *
@@ -101,8 +115,8 @@ c *********************************************************************
      .                  ,jaE       ,u1        ,u2            ,p   
      .                  ,pC        ,pC1       ,en            ,en0
      .                  ,rO        ,un        ,mdf           ,md
-     .                  ,ddU       ,temp      ,sx            ,numel
-     .                  ,nnode     ,ndm      
+     .                  ,ddU       ,temp      ,sx            ,eddyVisc
+     .                  ,numel     ,nnode     ,ndm      
      .                  ,nen       ,nshared   ,ndf           ,ndfE  
      .                  ,dt        ,t         ,matrizU1      ,matrizU2 
      .                  ,matrizPc  ,matrizE   ,neqU1         ,neqU2   
@@ -118,8 +132,8 @@ c...
       include 'time.fi'
       include 'simple.fi'
       include 'openmp.fi'
-      real*8  x(*),e(*),sedge(*),sedgeE(*),w(ndm,*),w0(ndm,*),wP(ndm,*)
-      real*8  ro(*),temp(*),un(*),mdf(*)
+      real(8)  x(*),e(*),sedge(*),sedgeE(*),w(ndm,*),w0(ndm,*)
+      real(8)  ro(*),temp(*),un(*),mdf(*),eddyVisc(*),wP(ndm,*)
       integer ix(*),nelcon(*),ie(*),pedge(*),pedgeE(*),num(*),ls(*)
       integer md(*)
       logical unsymPc
@@ -127,34 +141,35 @@ c...
 c ...
       character*80 prename
 c ... gradientes
-      real*8  gradU1(ndm,*),gradU2(*),gradP(*),gradPc(*),gradE(*),div(*)
-      real*8  fluxlU1(*),fluxlU2(*),fluxlPc(*),fluxlE(*),iM(*),mP(*)
+      real(8) gradU1(ndm,*),gradU2(ndm,*),gradP(*),gradPc(*),gradE(*)
+      real(8) div(*)
+      real(8) fluxlU1(*),fluxlU2(*),fluxlPc(*),fluxlE(*),iM(*),mP(*)
 c ... sistema
-      real*8  rCu1(*),rCu2(*),rCPc(*),rCe(*)
-      real*8  adU1(*),auU1(*),alU1(*),bU1(*),bU10(*)
-      real*8  adU2(*),auU2(*),alU2(*),bU2(*),bU20(*)
-      real*8  adE(*),auE(*),alE(*),bE(*),bE0(*)
-      real*8  adPc(*),auPc(*),alPc(*),bPc(*)
+      real(8) rCu1(*),rCu2(*),rCPc(*),rCe(*)
+      real(8) adU1(*),auU1(*),alU1(*),bU1(*),bU10(*)
+      real(8) adU2(*),auU2(*),alU2(*),bU2(*),bU20(*)
+      real(8) adE(*),auE(*),alE(*),bE(*),bE0(*)
+      real(8) adPc(*),auPc(*),alPc(*),bPc(*)
       integer iaU1(*),jaU1(*),iaU2(*),jaU2(*)
       integer iaPc(*),jaPc(*),iaE(*),jaE(*)
       integer matrizU1,matrizU2,matrizPc,matrizE
       integer neqU1,neqU2,neqPc,neqE,nadU1,nadU2,nadPc,nadE
 c ... variaveis
-      real*8  u1(*),u2(*),p(*),pC(*),pC1(*),en(*),en0(*),ddU(*),dt,t
+      real(8)  u1(*),u2(*),p(*),pC(*),pC1(*),en(*),en0(*),ddU(*),dt,t
       integer numel,ndm,nen,nshared,ndf,ndfE,istep,nnode
 c ... Solver      
-      real*8  solvtolPcg,solvtolBcg 
+      real(8)  solvtolPcg,solvtolBcg 
       integer solverU1,solverU2,solverPc,solverE,maxIt
-      real*8  sx(*)
+      real(8)  sx(*)
 c ...
-      real*8 dot,rU1,rU2,rPc,rE,rU10,rU20,rE0,rPc0
+      real(8) dot,rU1,rU2,rPc,rE,rU10,rU20,rE0,rPc0
       integer itSimple,conv
       integer noutSimple,noutCoo
       logical itResSimplePLot,solvU1,solvU2,solvE,flagCoo
       logical ResAbs,sEnergy,xMomentum,yMomentum
 c ... variaveis
-      real*8 cfl,reynalds,prandtl,grashof,vol
-      real*8 ZERO,kZero
+      real(8) cfl,reynalds,prandtl,grashof,vol
+      real(8) ZERO,kZero
       parameter (ZERO=1.0d-32)
 c ...
       kZero         = 2
@@ -186,8 +201,10 @@ c      open(19, file= 'matriz2.txt')
 c .....................................................................
 c
 c ... calculo de parametro por celula
-      call cellParameter(mP,ro,w,x,e,sedge,pedge,ie,nelcon,ix,numel,ndm
-     .                  ,nen,nshared,ndf,dt,7,1)
+      call cellParameter(mP   ,rO     ,w      ,x  ,eddyVisc
+     .                  ,e       ,sedge  ,pedge  ,ie ,nelcon
+     .                  ,ix      ,numel  ,ndm    ,nen,nshared 
+     .                  ,ndf     ,dt     ,      7,  1)
       call calParameter(mP,div,numel,cfl,reynalds,prandtl,grashof
      .                 ,vol,Massa,fluxoM,dt,tDinamico)
 c .....................................................................
@@ -204,7 +221,8 @@ c ... F = fontes no volume + Vp*u0
       elmU1Time = get_time() - elmU1Time
       call pform(adU1,auU1,alU1,iaU1,jaU1,num,un,u1,u2,u1,gradU1,gradU2
      .           ,gradP,div,fluxlU1,iM,ro
-     .           ,w,bU10,rCu1,x,sedge,e,ddU,ie,nelcon,pedge,ix
+     .           ,w,bU10,rCu1,x,sedge,e,ddU,eddyVisc
+     .           ,ie,nelcon,pedge,ix
      .           ,numel,ndm,nen,nshared,1,ndf,dt,0.0d0
      .           ,matrizU1,.true.,3,1,1,.true.,.false.,.false.
      .           ,.false.,.false.,bs)
@@ -218,7 +236,8 @@ c ... F = fontes no volume + Vp*v0
       elmU2Time = get_time() - elmU2Time
       call pform(adU2,auU2,alU2,iaU2,jaU2,num,un,u1,u2,u1,gradU1,gradU2
      .           ,gradP,div,fluxlU2,iM,ro
-     .           ,w,bU20,rCu2,x,sedge,e,ddU,ie,nelcon,pedge,ix
+     .           ,w,bU20,rCu2,x,sedge,e,ddU,eddyVisc
+     .           ,ie,nelcon,pedge,ix
      .           ,numel,ndm,nen,nshared,1,ndf,dt,0.0d0
      .           ,matrizU2,.true.,3,2,1,.true.,.false.,.false.
      .           ,.false.,.false.,bs)
@@ -239,8 +258,9 @@ c ... F = fontes no volume + Vp*en0
         elmETime = get_time() - elmETime    
         call pform(adE,auE,alE,iaE,jaE,num,un,en,en0,en0,gradE,gradE
      .            ,gradE,div,fluxlE,iM,rO
-     .            ,w,bE0,rCe,x,sedgeE,e,ddU,ie,nelcon,pedgeE,ix
-     .            ,numel,ndm,nen,nshared,1,1,dt,0.0d0
+     .            ,w,bE0,rCe,x,sedgeE,e,ddU,eddyVisc
+     .            ,ie,nelcon,pedgeE,ix
+     .            ,numel,ndm,nen,nshared,1,ndfE,dt,0.0d0
      .            ,matrizE,.true.,4,1,3,.true.,.false.,.false.
      .            ,.false.,.false.,bs)
         elmETime = get_time() - elmETime
@@ -256,7 +276,7 @@ c     endif
 c .....................................................................
 c
 c ...
-      simpleLoop: do itSimple =1 ,  maxItSimple
+      simpleLoop: do itSimple = 1 ,  maxItSimple
         simpleItTime = get_time()
 c ...     
         call guess(u1,u2,w,numel,ndf-1)
@@ -264,6 +284,8 @@ c .....................................................................
 c       
 c ... recontrucao do gradiente de u1
         grSimpleTime = get_time() - grSimpleTime
+c       call uformnode(un,u1,ddum,ddum,x,mdf,ix,md,nnode,numel,ndm
+c   .                ,nen,1,2)
         call gform(u1,gradU1,fluxlU1,x,sedge,e,ls,ie,nelcon,pedge,ix
      .            ,numel,ndm,nen,nshared,1,ndf,2,1,1)
         grSimpleTime = get_time() - grSimpleTime
@@ -271,6 +293,8 @@ c .....................................................................
 c
 c ... recontrucao do gradiente de u2
         grSimpleTime = get_time() - grSimpleTime
+c       call uformnode(un,u2,ddum,ddum,x,mdf,ix,md,nnode,numel,ndm
+c   .                ,nen,1,2)
         call gform(u2,gradU2,fluxlU2,x,sedge,e,ls,ie,nelcon,pedge,ix
      .            ,numel,ndm,nen,nshared,1,ndf,2,2,1)
         grSimpleTime = get_time() - grSimpleTime
@@ -282,11 +306,19 @@ c .....................................................................
 c
 c ... recontrucao do gradiente da pressao
         grSimpleTime = get_time() - grSimpleTime 
+c       call uformnode(un,p,ddum,ddum,x,mdf,ix,md,nnode,numel,ndm
+c   .                 ,nen,1,2)
         call gform(p,gradP,fluxlPc,x,sedge,e,ls,ie,nelcon,pedge,ix
      .            ,numel,ndm,nen,nshared,1,ndf,2,3,2)
         grSimpleTime = get_time() - grSimpleTime
 c .....................................................................
 c
+c ...
+        call turbulenceLes(p    ,w  ,gradU1,gradU2 , x   ,eddyVisc
+     .                    ,sedge,e  ,    ie, nelcon,pedge,ix
+     .                    ,numel,ndm,   nen,nshared,ndf
+     .                    ,nshared,8,0,1) 
+c .....................................................................
 c ... SIMPLER 
 c        if(simpleR) then
 c ... pseudo-velocidades
@@ -350,7 +382,8 @@ c ... montagem do sistema u1
         elmU1Time = get_time() - elmU1Time
         call pform(adU1,auU1,alU1,iaU1,jaU1,num,un,u1,p,p,gradU1,gradU2
      .            ,gradP,div,fluxlU1,iM,rO
-     .            ,w,bU1,rCu1,x,sedge,e,ddU,ie,nelcon,pedge,ix
+     .            ,w,bU1,rCu1,x,sedge,e,ddU,eddyVisc
+     .            ,ie,nelcon,pedge,ix
      .            ,numel,ndm,nen,nshared,1,ndf,dt,0.0d0
      .            ,matrizU1,.true.,1,1,1,.true.,.true.,.true.
      .            ,.true.,.true.,bs)
@@ -379,7 +412,8 @@ c ... montagem do sistema u2
         elmU2Time = get_time() - elmU2Time    
         call pform(adU2,auU2,alU2,iaU2,jaU2,num,un,u2,p,p,gradU2,gradU1
      .            ,gradP,div,fluxlU2,iM,rO
-     .            ,w,bU2,rCu2,x,sedge,e,ddU,ie,nelcon,pedge,ix
+     .            ,w,bU2,rCu2,x,sedge,e,ddU,eddyVisc
+     .            ,ie,nelcon,pedge,ix
      .            ,numel,ndm,nen,nshared,1,ndf,dt,0.0d0
      .            ,matrizU2,.true.,1,2,1,.true.,.true.,.true.
      .            ,.true.,.true.,bs)
@@ -475,14 +509,15 @@ c ... atualizando o campo de velocidades estimadas
         simpleUpdateTime = get_time() - simpleUpdateTime 
 c .....................................................................
 c
-c       call uformnode(un,Pc,ddum,ddum,x,mdf,ix,md,nnode,numel,ndm
-c     .                ,nen,1,1)
+c      call uformnode(un,Pc,ddum,ddum,x,mdf,ix,md,nnode,numel,ndm
+c   .                ,nen,1,1)
 c ... equacao da correcao da pressao
         print*,'correcao de pressao'  
         elmPcTime = get_time() - elmPCTime
         call pform(adPc,auPc,alPc,iaPc,jaPc,num,un,pC,p,p,gradPc
      .            ,gradP,gradPc,div,fluxlPc,iM,rO
-     .            ,wP,bPc,rCPc,x,sedge,e,ddU,ie,nelcon,pedge,ix
+     .            ,wP,bPc,rCPc,x,sedge,e,ddU,eddyVisc
+     .            ,ie,nelcon,pedge,ix
      .            ,numel,ndm,nen,nshared,1,ndf,dt,0.0d0
      .            ,matrizPc,unsymPc,1,2,2,.true.,.true.,.false.
      .            ,.false.,.true.,bs)
@@ -492,7 +527,7 @@ c
 c ... export coo format
         if(flagCoo) then
           call exportCoo(iaPc,jaPc,alPc   ,adPc    ,auPc,bPc,neqPc,nadPc
-     .                  ,.false.  ,prename,noutCoo,itSimple)
+     .                  ,unsymPc  ,prename,noutCoo,itSimple ,matrizPc)
         endif
 c .....................................................................
 c 
@@ -528,7 +563,8 @@ c ...
           elmPcTime = get_time() - elmPCTime
           call pform(adPc,auPc,alPc,iaPc,jaPc,num,un,pC,p,p,gradPc
      .              ,gradP,gradPc,div,fluxlPc,iM,rO
-     .              ,wP,bPc,rCPc,x,sedge,e,ddU,ie,nelcon,pedge,ix
+     .              ,wP,bPc,rCPc,x,sedge,e,ddU,eddyVisc
+     .              ,ie,nelcon,pedge,ix
      .              ,numel,ndm,nen,nshared,1,ndf,dt,0.0d0
      .              ,matrizPc,unsymPc,4,2,2,.true.,.false.,.false.
      .              ,.false.,.false.,bs)
@@ -587,7 +623,8 @@ c ...
           elmETime = get_time() - elmETime  
           call pform(adE,auE,alE,iaE,jaE,num,un,en,en,en,gradE,gradE
      .             ,gradE,div,fluxlE,iM,rO
-     .             ,w,bE,rCe,x,sedgeE,e,ddU,ie,nelcon,pedgeE,ix
+     .             ,w,bE,rCe,x,sedgeE,e,ddU,eddyVisc
+     .             ,ie,nelcon,pedgeE,ix
      .             ,numel,ndm,nen,nshared,1,1,dt,0.0d0
      .             ,matrizE,.true.,1,1,3,.true.,.true.,.false.
      .             ,.false.,.true.,bs)     
@@ -737,8 +774,10 @@ c ...
 c .....................................................................
 c
 c ... calculo de parametro por celula
-      call cellParameter(mP,ro,w,x,e,sedge,pedge,ie,nelcon,ix,numel,ndm
-     .                  ,nen,nshared,ndf,dt,7,1)
+      call cellParameter(mP   ,rO     ,w      ,x  ,eddyVisc
+     .                  ,e       ,sedge  ,pedge  ,ie ,nelcon
+     .                  ,ix      ,numel  ,ndm    ,nen,nshared 
+     .                  ,ndf     ,dt     ,      7,  1)
       call calParameter(mP,div,numel,cfl,reynalds,prandtl,grashof
      .                 ,vol,Massa,fluxoM,dt,tDinamico)
 c .....................................................................
@@ -773,9 +812,9 @@ c *********************************************************************
       subroutine simpleUpdate(w,pre,u1,u2,preC,gradPc,d,numel,ndm
      .                       ,underU,underPc,simpleR)
       implicit none
-      real*8 w(ndm,*),u1(*),u2(*),pre(*),preC(*),d(ndm,*)
-      real*8 gradPc(ndm,*)
-      real*8 underU,underPc
+      real(8) w(ndm,*),u1(*),u2(*),pre(*),preC(*),d(ndm,*)
+      real(8) gradPc(ndm,*)
+      real(8) underU,underPc
       integer numel,ndm
       integer i
       logical simpleR
@@ -813,7 +852,7 @@ c * ----------------------------------------------------------------- *
 c *********************************************************************
       subroutine updateVel(w,u1,u2,numel,ndm)
       implicit none
-      real*8 w(ndm,*),u1(*),u2(*)
+      real(8) w(ndm,*),u1(*),u2(*)
       integer ndm,numel
       integer i
       do i = 1, numel
@@ -836,7 +875,7 @@ c * ----------------------------------------------------------------- *
 c *********************************************************************
       subroutine pseudoVel(w,iM,numel,ndm)
       implicit none
-      real*8 w(ndm,*),iM(2*ndm,numel)
+      real(8) w(ndm,*),iM(2*ndm,numel)
       integer ndm,numel
       integer i
       do i = 1, numel
@@ -859,7 +898,7 @@ c * ----------------------------------------------------------------- *
 c *********************************************************************    
       subroutine guess(u1,u2,w,numel,n)
       implicit none
-      real*8 u1(*),u2(*),w(n,*)
+      real(8) u1(*),u2(*),w(n,*)
       integer numel,n
       integer i
       do i = 1, numel
@@ -882,7 +921,7 @@ c * ----------------------------------------------------------------- *
 c *********************************************************************      
       subroutine pressureGuess(p,pedge,sedge,numel,nshared,ndf)
       implicit none
-      real*8 p(*),sedge(ndf,nshared+1,numel)
+      real(8) p(*),sedge(ndf,nshared+1,numel)
       integer numel,pedge(nshared+1,numel)
       integer i,nshared,ndf,idCell
       idCell = nshared + 1
@@ -905,7 +944,7 @@ c * ----------------------------------------------------------------- *
 c *********************************************************************    
       subroutine massUpdate(ro,numel)
       implicit none
-      real*8 ro(3,numel)
+      real(8) ro(3,numel)
       integer numel,i
       do i = 1, numel
         ro(1,i) = ro(2,i)
@@ -933,7 +972,7 @@ c * ----------------------------------------------------------------- *
 c *********************************************************************
       subroutine divergente(div,gradU1,gradU2,numel,n)
       implicit none
-      real*8 div(numel),gradU1(n,numel),gradU2(n,numel)
+      real(8) div(numel),gradU1(n,numel),gradU2(n,numel)
       integer numel,i,n
       do i = 1, numel
         div(i) = gradU1(1,i) + gradU2(2,i)
@@ -972,8 +1011,8 @@ c *********************************************************************
       subroutine calParameter(mP,div,numel,cfl,re,pr,gr,vol,massa,fM,dt
      .                       ,deltaDinamico)
       implicit none
-      real*8 mP(9,numel),div(*),vol,dt,dtm,dtm1,cfl,re,pr,gr
-      real*8 massa,fM,massInput,massOut
+      real(8) mP(9,numel),div(*),vol,dt,dtm,dtm1,cfl,re,pr,gr
+      real(8) massa,fM,massInput,massOut
       logical deltaDinamico
       integer numel
       integer i
@@ -1048,7 +1087,7 @@ c * ----------------------------------------------------------------- *
 c *********************************************************************
       subroutine  varMassEsp(ro,temp,numel,typeF,typeT,pos)
       implicit none
-      real*8 ro(*),temp(*)
+      real(8) ro(*),temp(*)
       integer numel
       integer typeT,typeF,pos
 c ... gas ideal Ar
@@ -1134,8 +1173,8 @@ c *********************************************************************
       integer nnode,numel,ndm,istep
       integer nout
       integer i,j
-      real*8 w(ndm,*),w0(ndm,*),p(*),en(*),en0(*)
-      real*8 ro(3,*),t
+      real(8) w(ndm,*),w0(ndm,*),p(*),en(*),en0(*)
+      real(8) ro(3,*),t
       character*80 fileout
       character string*80
       logical load,sEnergy

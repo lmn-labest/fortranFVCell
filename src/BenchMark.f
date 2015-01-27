@@ -15,7 +15,8 @@ c *********************************************************************
       use Malloc
       implicit none
       include 'time.fi'
-      integer neq,i,nThreads
+      include 'openmp.fi'
+      integer neq,i,j,nThreads,mnt
       integer,parameter :: nsample=100000
       real*8 ,parameter :: ZERO=1.0d-15
       logical openmp
@@ -56,135 +57,152 @@ c
 c ... omp
       if(openmp) then
 c ... dot_omp
-        timei = 0.0d0
-        do i = 1, nsample
-          timei = get_time() - timei
-c$omp parallel num_threads(nThreads)
-          d = dot_omp(ia(i_b1),ia(i_b2),neq)
+c$      mnt = omp_get_max_threads()
+        do j = 2, mnt,2
+          timei = 0.0d0
+          do i = 1, nsample
+            timei = get_time() - timei
+c$omp parallel num_threads(j)
+            d = dot_omp(ia(i_b1),ia(i_b2),neq)
 c$omp end parallel
-          timei = get_time() - timei
-          if(dabs(d - sumSquares(neq)) .gt. ZERO) then
-            print*,'benchmarkDot: dot_omp nao passou no teste!!!.'
-            stop
-          endif
+            timei = get_time() - timei
+            if(dabs(d - sumSquares(neq)) .gt. ZERO) then
+              print*,'benchmarkDot: dot_omp nao passou no teste!!!.'
+              stop
+            endif
+          enddo
+          write(*,3000),'dot_omp',j,timei,(d-sumSquares(neq))
         enddo
-        write(*,2000),'dot_omp',timei,(d-sumSquares(neq))
 c .....................................................................  
 c
 c ... dot_ompL2
-        timei = 0.0d0
-        do i = 1, nsample
-          timei = get_time() - timei
-c$omp parallel num_threads(nThreads)
-          d = dot_ompL2(ia(i_b1),ia(i_b2),neq)
+        do j = 2, mnt,2
+          timei = 0.0d0
+          do i = 1, nsample
+            timei = get_time() - timei
+c$omp parallel num_threads(j)
+            d = dot_ompL2(ia(i_b1),ia(i_b2),neq)
 c$omp end parallel
-          timei = get_time() - timei
-          if(dabs(d - sumSquares(neq)) .gt. ZERO) then
-            print*,'benchmarkDot: dot_ompL2 nao passou no teste!!!.'
-            stop
-          endif
+            timei = get_time() - timei
+            if(dabs(d - sumSquares(neq)) .gt. ZERO) then
+              print*,'benchmarkDot: dot_ompL2 nao passou no teste!!!.'
+              stop
+            endif
+          enddo
+          write(*,3000),'dot_ompL2',j,timei,(d-sumSquares(neq))
         enddo
-        write(*,2000),'dot_ompL2',timei,(d-sumSquares(neq))
 c .....................................................................  
 c
 c ... dot_ompL4
-        timei = 0.0d0
-        do i = 1, nsample
-          timei = get_time() - timei
-c$omp parallel num_threads(nThreads)
-          d = dot_ompL4(ia(i_b1),ia(i_b2),neq)
+        do j = 2, mnt,2
+          timei = 0.0d0
+          do i = 1, nsample
+            timei = get_time() - timei
+c$omp parallel num_threads(j)
+            d = dot_ompL4(ia(i_b1),ia(i_b2),neq)
 c$omp end parallel
-          timei = get_time() - timei
-          if(dabs(d - sumSquares(neq)) .gt. ZERO) then
-            print*,'benchmarkDot: dot_ompL4 nao passou no teste!!!.'
-            stop
-          endif
-        enddo
-        write(*,2000),'dot_ompL4',timei,(d-sumSquares(neq))
+            timei = get_time() - timei
+            if(dabs(d - sumSquares(neq)) .gt. ZERO) then
+              print*,'benchmarkDot: dot_ompL4 nao passou no teste!!!.'
+              stop
+            endif
+          enddo
+          write(*,3000),'dot_ompL4',j,timei,(d-sumSquares(neq))
+       enddo 
 c .....................................................................  
 c
 c ... dot_ompL6
-        timei = 0.0d0
-        do i = 1, nsample
-          timei = get_time() - timei
-c$omp parallel num_threads(nThreads)
-          d = dot_ompL6(ia(i_b1),ia(i_b2),neq)
+        do j = 2, mnt,2
+          timei = 0.0d0
+          do i = 1, nsample
+            timei = get_time() - timei
+c$omp parallel num_threads(j)
+            d = dot_ompL6(ia(i_b1),ia(i_b2),neq)
 c$omp end parallel
-          timei = get_time() - timei
-          if(dabs(d - sumSquares(neq)) .gt. ZERO) then
-            print*,'benchmarkDot: dot_ompL6 nao passou no teste!!!.'
-            stop
-          endif
-        enddo
-        write(*,2000),'dot_ompL6',timei,(d-sumSquares(neq))
+            timei = get_time() - timei
+            if(dabs(d - sumSquares(neq)) .gt. ZERO) then
+              print*,'benchmarkDot: dot_ompL6 nao passou no teste!!!.'
+              stop
+            endif
+          enddo
+          write(*,3000),'dot_ompL6',j,timei,(d-sumSquares(neq))
+       enddo 
 c .....................................................................  
 c
 c ... dot_ompL8
-        timei = 0.0d0
-        do i = 1, nsample
-          timei = get_time() - timei
-c$omp parallel num_threads(nThreads)
-          d = dot_ompL8(ia(i_b1),ia(i_b2),neq)
+        do j = 2, mnt,2
+          timei = 0.0d0
+          do i = 1, nsample
+            timei = get_time() - timei
+c$omp parallel num_threads(j)
+            d = dot_ompL8(ia(i_b1),ia(i_b2),neq)
 c$omp end parallel
-          timei = get_time() - timei
-          if(dabs(d - sumSquares(neq)) .gt. ZERO) then
-            print*,'benchmarkDot: dot_ompL8 nao passou no teste!!!.'
-            stop
-          endif
-        enddo
-        write(*,2000),'dot_ompL8',timei,(d-sumSquares(neq))
+            timei = get_time() - timei
+            if(dabs(d - sumSquares(neq)) .gt. ZERO) then
+              print*,'benchmarkDot: dot_ompL8 nao passou no teste!!!.'
+              stop
+            endif
+          enddo
+          write(*,3000),'dot_ompL8',j,timei,(d-sumSquares(neq))
+       enddo 
 c .....................................................................  
 c
 c ... dot_ompO2
-        timei = 0.0d0
-        do i = 1, nsample
-          timei = get_time() - timei
-c$omp parallel num_threads(nThreads)
-          d = dot_ompO2(ia(i_b1),ia(i_b2),neq)
+        do j = 2, mnt,2
+          timei = 0.0d0
+          do i = 1, nsample
+            timei = get_time() - timei
+c$omp parallel num_threads(j)
+            d = dot_ompO2(ia(i_b1),ia(i_b2),neq)
 c$omp end parallel
-          timei = get_time() - timei
-          if(dabs(d - sumSquares(neq)) .gt. ZERO) then
-            print*,'benchmarkDot: dot_ompO2 nao passou no teste!!!.'
-            stop
-          endif
-        enddo
-        write(*,2000),'dot_ompO2',timei,(d-sumSquares(neq))
+            timei = get_time() - timei
+            if(dabs(d - sumSquares(neq)) .gt. ZERO) then
+              print*,'benchmarkDot: dot_ompO2 nao passou no teste!!!.'
+              stop
+            endif
+          enddo
+          write(*,3000),'dot_ompO2',j,timei,(d-sumSquares(neq))
+       enddo 
 c .....................................................................  
 c
 c ... dot_ompO4
-        timei = 0.0d0
-        do i = 1, nsample
-          timei = get_time() - timei
-c$omp parallel num_threads(nThreads)
-          d = dot_ompO4(ia(i_b1),ia(i_b2),neq)
+        do j = 2, mnt,2
+          timei = 0.0d0
+          do i = 1, nsample
+            timei = get_time() - timei
+c$omp parallel num_threads(j)
+            d = dot_ompO4(ia(i_b1),ia(i_b2),neq)
 c$omp end parallel
-          timei = get_time() - timei
-          if(dabs(d - sumSquares(neq)) .gt. ZERO) then
-            print*,'benchmarkDot: dot_ompO4 nao passou no teste!!!.'
-            stop
-          endif
-        enddo
-        write(*,2000),'dot_ompO4',timei,(d-sumSquares(neq))
+            timei = get_time() - timei
+            if(dabs(d - sumSquares(neq)) .gt. ZERO) then
+              print*,'benchmarkDot: dot_ompO4 nao passou no teste!!!.'
+              stop
+            endif
+          enddo
+          write(*,3000),'dot_ompO4',j,timei,(d-sumSquares(neq))
+       enddo 
 c .....................................................................  
 c
 c ... dot_ompO2L2
-        timei = 0.0d0
-        do i = 1, nsample
-          timei = get_time() - timei
-c$omp parallel num_threads(nThreads)
-          d = dot_ompO2L2(ia(i_b1),ia(i_b2),neq)
+        do j = 2, mnt,2
+          timei = 0.0d0
+          do i = 1, nsample
+            timei = get_time() - timei
+c$omp parallel num_threads(j)
+            d = dot_ompO2L2(ia(i_b1),ia(i_b2),neq)
 c$omp end parallel
-          timei = get_time() - timei
-          if(dabs(d - sumSquares(neq)) .gt. ZERO) then
-            print*,'benchmarkDot: dot_ompO2L2 nao passou no teste!!!.'
-            stop
-          endif
+            timei = get_time() - timei
+            if(dabs(d - sumSquares(neq)) .gt. ZERO) then
+              print*,'benchmarkDot: dot_ompO2L2 nao passou no teste!!!.'
+              stop
+            endif
+          enddo
+          write(*,3000),'dot_ompO2L2',j,timei,(d-sumSquares(neq))
         enddo
-        write(*,2000),'dot_ompO2L2',timei,(d-sumSquares(neq))
-      endif
 c .....................................................................  
 c 
 c ... 
+      endif 
       dottime = 0.0d0
 c .....................................................................  
 c 
@@ -193,7 +211,9 @@ c ... liberacao da  memoria
       i_b2  = dealloc('bench2  ')
 c .....................................................................
       return
- 2000 format(a12,1x,':',1x,f20.3,1x,'erro :',d22.15)
+ 2000 format(a12,1x,'time :',1x,f20.3,1x,'erro :',d22.15)
+ 3000 format(a12,1x,'nthreads :',i2,1x,': time :'
+     .      ,f20.3,1x,'erro :',d22.15)
       end
 c *********************************************************************
 c

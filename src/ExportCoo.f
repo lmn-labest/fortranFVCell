@@ -14,33 +14,34 @@ c * unsym  - matriz nao simetrica                                     *
 c * prename- prefixo do arquivo                                       *
 c * nout   - unidade do arquivo de saida                              *
 c * it     - iteracao/timestep                                        *
+c*  code   - 1 - CSRD; 2 - CSR; 3 - CSRC                              * 
 c * ----------------------------------------------------------------- *
 c * Parametros de saida :                                             *
 c * ----------------------------------------------------------------- *
 c * ----------------------------------------------------------------- *
 c *********************************************************************
       subroutine exportCoo(iax,ja,al,ad,au,b,neq,nad,unsym,prename
-     .                    ,nout,it)
+     .                    ,nout,it,code)
       use Malloc
       implicit none
       character*80 prename,name
       character*90 nameout
       integer*8 i_iaCoo,i_jaCoo,i_aCoo
-      integer neq,nad,nout,it
+      integer neq,nad,nout,it,code
       integer iax(*),ja(*)
       real*8 ad(*),al(*),au(*),b(*)
       logical unsym
 c ...
       i_iaCoo  = alloc_4('linCooPc',1,neq+nad) 
       i_jaCoo  = alloc_4('colCooPc',1,neq+nad) 
-      i_aCoo = alloc_4('aCooPc  ',1,neq+nad)
+      i_aCoo   = alloc_4('aCooPc  ',1,neq+nad)
 c ....................................................................
 c 
 c ...
       call csrToCoo(ia(i_iaCoo) ,ia(i_jaCoo) ,ia(i_aCoo)
      .             ,iax         ,ja
      .             ,al          ,ad      ,au
-     .             ,neq         ,nad
+     .             ,neq         ,nad     ,code
      .             ,unsym       ,.false.)
 c ....................................................................
 c 
@@ -48,7 +49,8 @@ c ...
       nameOut = name(prename,it,52) 
       call writeCoo(ia(i_iaCoo),ia(i_jaCoo),ia(i_aCoo)
      .             ,b          ,neq        ,neq+nad
-     .             ,nameOut    ,nout       ,.false.)
+     .             ,nameOut    ,nout       ,.false.
+     .             ,unsym)
 c ....................................................................
 c 
 c ...

@@ -1,39 +1,41 @@
 c *********************************************************************
 c * CELLLIB: biblioteca de celulas                                    *
 c * ------------------------------------------------------------------*
-c *  a     - nao definido                                             *
-c *  x     - coordenadas nodais                                       *
-c *  u     - temperatura na celula                                    *
-c *  u0    - temperatura na celula no passo anterior                  *
-c *  ro    - massa especifica da celula e sua vizinhas em t e t+1     *
-c *  un    - temperatura nodal                                        *
-c *  grad  - gradiente nas celulas                                    *
-c *  grad1 - gradiente nas celulas                                    *
-c *  grad2 - gradiente nas celulas                                    *
-c *  div   - divergente da velocidade                                 *
-c *  iM    - interpola para velocidades nas faces                     *
-c *  fluxl - limitador de fluxo na celula                             *
-c *  w     - velocidade nas celulas                                   *
-c *  d     - campo d do simple                                        *
-c *  k     - propriededas da celula e sua vizinhas                    *
-c *  sp    - nao definido                                             *
-c *   p    - nao definido                                             *
-c * sedge  - condicoes de contorno nas arestas                        *
-c * pedge  - tipo de condicao de contorno                             *
-c * viz    - vizinhos                                                 *
-c * ndm    - numero de dimensoes                                      *
-c * nen    - numero de nos por celula                                 *
-c * nshared- numero de celula compartilhados pela celula central      *
-c * type   - tipo de elemento                                         *
-c * iws    - 1 - motagem do sistema (KU=F)                            *
-c *          2 - calculo do gradiente                                 *
-c * iws1   - 1 - direcao 1                                            *
-c *          2 - direcao 2                                            *
-c * lib    -                                                          *
-c * nel    - numero da celula                                         *
-c * dt     - passo de tempo                                           *
-c * mP     - parametros da equacao de momentos(cfl,Reynalds)          *
-c * bs     - Euller Backward de segunda ordem                         *
+c *  a      - nao definido                                            *
+c *  x      - coordenadas nodais                                      *
+c *  u      - temperatura na celula                                   *
+c *  u0     - temperatura na celula no passo anterior                 *
+c *  ro     - massa especifica da celula e sua vizinhas em t e t+1    *
+c *  un     - temperatura nodal                                       *
+c *  grad   - gradiente nas celulas                                   *
+c *  grad1  - gradiente nas celulas                                   *
+c *  grad2  - gradiente nas celulas                                   *
+c *  div    - divergente da velocidade                                *
+c *  iM     - interpola para velocidades nas faces                    *
+c *  fluxl  - limitador de fluxo na celula                            *
+c *  w      - velocidade nas celulas                                  *
+c *  d      - campo d do simple                                       *
+c *  k      - propriededas da celula e sua vizinhas                   *
+c *  sp     - nao definido                                            *
+c *   p     - nao definido                                            *
+c * sedge   - condicoes de contorno nas arestas                       *
+c * pedge   - tipo de condicao de contorno                            *
+c * viz     - vizinhos                                                *
+c * ndm     - numero de dimensoes                                     *
+c * nen     - numero de nos por celula                                *
+c * nshared - numero de celula compartilhados pela celula central     *
+c * type    - tipo de elemento                                        *
+c * iws     - 1 - motagem do sistema (KU=F)                           *
+c *           2 - calculo do gradiente                                *
+c * iws1    - 1 - direcao 1                                           *
+c *           2 - direcao 2                                           *
+c * lib     -                                                         *
+c * nel     - numero da celula                                        *
+c * dt      - passo de tempo                                          *
+c * alpha   - paramentro alpha                                        *
+c * mP      - parametros da equacao de momentos(cfl,Reynalds)         *
+c * eddyVisc- viscosidade tubulenca                                   *
+c * bs      - Euller Backward de segunda ordem                        *
 c * ----------------------------------------------------------------- *
 c * Parametros de saida :                                             *
 c * ----------------------------------------------------------------- *
@@ -49,12 +51,13 @@ c *********************************************************************
      .                  ,k    ,sp      ,p      ,sedge  ,pedge
      .                  ,viz  ,lls     ,nen    ,nshared,ndm  
      .                  ,type ,iws    ,iws1    ,lib    ,nel  
-     .                  ,dt   ,alpha  ,Mp      ,bs)
+     .                  ,dt   ,alpha  ,mP      ,eddyVisc,bs)
       implicit none
       include 'error.fi'
-      real*8 a(*),x(*),u(*),u0(*),u1(*),grad(*),grad1(*),grad2(*),k(*)
+      real*8 a(*),x(*),u(*),u0(*),u1(*),grad(*)
+      real*8 grad1(*),grad2(*),k(*)
       real*8 lls(*),w(*),dt,alpha,fluxl(*),d,sp(*),p(*),sedge(*),div(*)
-      real*8 iM(*),Mp(*),ro(*),un(*)
+      real*8 iM(*),Mp(*),ro(*),un(*),eddyVisc(*)
       integer pedge(*),viz(*),nen,nshared,ndm,type,iws,iws1,nel
       integer acod,sn(2,4),lib
       logical bs
@@ -139,10 +142,10 @@ c
 c ... cell 2D simple - incompressivel (Wall-Model-Edge-based-GGl-TVD)
       elseif(type .eq.  73 .or. type .eq. 75) then
         if( lib .eq. 1) then
-          call cell_si_wm_eb_i_ggl(a,x,u,u0,u1,w,d,grad,grad1,grad2
-     .                         ,div,iM,fluxl,k,sp,p,sedge,dt
-     .                         ,pedge,viz,nshared,ndm,iws,iws1,nel,sn
-     .                         ,acod,Mp,bs)
+          call cell_si_wm_les_eb_i_ggl(a,x,u,u0,u1,w,d,grad,grad1,grad2
+     .                                ,div,iM,fluxl,k,sp,p,sedge,dt
+     .                                ,pedge,viz,nshared,ndm,iws,iws1
+     .                                ,nel,sn,acod,Mp,eddyVisc,bs)
         elseif(lib .eq.2) then
           call cell_si_p_i_ggl(a,x,un,u,u0,u1,w,d,grad,grad1,iM,fluxl,k
      .                        ,sp,p,sedge,dt,pedge,viz,nshared,ndm,iws

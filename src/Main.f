@@ -41,6 +41,8 @@ c ... simple
       integer*8 i_fluxlU1,i_fluxlU2,i_fluxlPc,i_fluxlE
       integer*8 i_rCellU1,i_rCellU2,i_rCellPc,i_rCellE
       integer*8 i_div,i_mParameter
+c ... turbulence
+      integer*8 i_eddyVisc
 c ... Coo
       integer*8 i_lin,i_col,i_aCoo
 c ......................................................................
@@ -128,7 +130,7 @@ c ... Macro-comandos disponiveis:
      .           'underP  ','underU  ','setelev ','dt      ','config  ',
      .           'pgradU1 ','pgradU2 ','pgradU3 ','skewC   ','pgeo    ',
      .           'pgradT  ','pgradE  ','pbcoo   ','pcoo    ','        ',
-     .           'pvort2D ','bench   ','        ','        ','        ',
+     .           'pvort2D ','bench   ','pEddyVis','        ','        ',
      .           'underRo ','tolPcg  ','tolBiPcg','maxItSol','stop    '/
 c ----------------------------------------------------------------------
 c
@@ -177,8 +179,8 @@ c ... tsolver               ( PCG - 1|PBiCGSTAB - 2|PGMRES -3 )
       solverPc = 1
       solverE  = 2
       maxItSol = 300000
-      solvtolPcg = 1.5d-16
-      solvtolBcg = 1.5d-16
+      solvtolPcg = 0.12d-15
+      solvtolBcg = 0.12d-15
 c ... nao linear
       log_nl   = .false.
       itPlot   = .false.
@@ -318,6 +320,7 @@ c
       i_lin        = 1
       i_col        = 1
       i_aCoo       = 1
+      i_eddyVisc   = 1
 c
 c   5 continue 
 c
@@ -463,8 +466,8 @@ c ....................................................................
      .3100,3200,3300,3400,3500, !underPc,setpcell,pctemp  ,pcgrad  ,simpleC 
      .3600,3700,3800,3900,4000, !underP ,underU  ,setelev ,dt      ,config  
      .4100,4200,4300,4400,4500, !pgradU1,pgradU2 ,pgradU3 ,skewC   ,pgeo    
-     .4600,4700,4800,4900,5000, !pgradT ,pgradE  ,        ,        ,        
-     .5100,5200,5300,5400,5500, !       ,        ,        ,        ,        
+     .4600,4700,4800,4900,5000, !pgradT ,pgradE  ,pbcoo   ,pcoo    ,        
+     .5100,5200,5300,5400,5500, !pvort2D,bench   ,pEddyVis,        ,        
      .5600,5700,5800,5900,6000)j!underRo,tolPcg  ,tolBiPcg,maxItSol,stop    
 c ----------------------------------------------------------------------
 c
@@ -708,6 +711,7 @@ c ... simple
         i_wP        = alloc_8('vpseudo ',ndfF-1,numel)
         i_w0        = alloc_8('v0      ',ndfF-1,numel)
         i_mParameter= alloc_8('mPar    ',9,numel)
+        i_eddyVisc  = alloc_8('eddyVisc',1,numel)
         call azero(ia(i_gradU1),ndm*numel)
         call azero(ia(i_gradU2),ndm*numel)
         call azero(ia(i_gradPc),ndm*numel)
@@ -730,6 +734,7 @@ c ... simple
         call azero(ia(i_wP) ,numel*(ndfF-1))
         call azero(ia(i_w0) ,numel*(ndfF-1))
         call azero(ia(i_mParameter),6*numel)
+        call azero(ia(i_eddyVisc  ),  numel)
        endif
 c ......................................................................
 c
@@ -1023,34 +1028,34 @@ c
 c ...
       simpleTime = get_time() - simpleTime
       call simple(ia(i_x)   ,ia(i_ix)     ,ia(i_e)        ,ia(i_ie)
-     .     ,ia(i_nelcon)    ,ia(i_pedgeF) ,ia(i_sedgeF)   ,ia(i_pedgeE)
-     .     ,ia(i_sedgeE)    ,ia(i_w)      ,ia(i_w0)       ,ia(i_wP)    
-     .     ,ia(i_num)       ,ia(i_ls)     ,ia(i_gradU1)   ,ia(i_gradU2)
-     .     ,ia(i_gradP)     ,ia(i_gradPc) ,ia(i_gradE)    ,ia(i_div)   
-     .     ,ia(i_mParameter),ia(i_iM)     ,ia(i_fluxlU1)  ,ia(i_fluxlU2)
-     .     ,ia(i_fluxlPc)   ,ia(i_fluxlE) ,ia(i_rCellU1)  ,ia(i_rCellU2)
-     .     ,ia(i_rCellPc)   ,ia(i_rCellE) ,ia(i_adU1)     ,ia(i_auU1)   
-     .     ,ia(i_alU1)      ,ia(i_bU1)    ,ia(i_bU10)     ,ia(i_iaU1)   
-     .     ,ia(i_jaU1)      ,ia(i_adU2)   ,ia(i_auU2)     ,ia(i_alU2)   
-     .     ,ia(i_bU2)       ,ia(i_bU20)   ,ia(i_iaU2)     ,ia(i_jaU2)   
-     .     ,ia(i_adPc)      ,ia(i_auPc)   ,ia(i_alPc)     ,ia(i_bPC)    
-     .     ,ia(i_iaPc)      ,ia(i_jaPc)   ,ia(i_adE)      ,ia(i_auE)    
-     .     ,ia(i_alE)       ,ia(i_bE)     ,ia(i_bE0)      ,ia(i_iaE) 
-     .     ,ia(i_jaE)       ,ia(i_u1 )    ,ia(i_u2)       ,ia(i_p)   
-     .     ,ia(i_pC)        ,ia(i_Pc1)    ,ia(i_en)       ,ia(i_en0)    
-     .     ,ia(i_ro)        ,ia(i_un)     ,ia(i_mdf)      ,ia(i_md)   
-     .     ,ia(i_ddU)      ,ia(i_temp)    ,ia(i_sx)       ,numel
-     .     ,nnode          ,ndm        
-     .     ,nen            ,nen           ,ndfF           ,ndfE
-     .     ,dt             ,t             ,matrizU1       ,matrizU2     
-     .     ,matrizPc       ,matrizE       ,neqU1          ,neqU2
-     .     ,neqPc          ,neqE          ,nadU1          ,nadU2  
-     .     ,nadPc          ,nadE          ,solverU1       ,solverU2  
-     .     ,solverPc       ,solverE       ,solvTolPcg     ,solvTolBcg   
-     .     ,maxItSol       ,noutSimple    ,itResSimplePlot,sEnergy  
-     .     ,istep          ,cfl           ,re             ,prandtl 
-     .     ,grashof        ,vol           ,unsymPc        ,bs 
-     .     ,prename        ,noutCoo       ,flagCoo)                    
+     .    ,ia(i_nelcon)    ,ia(i_pedgeF) ,ia(i_sedgeF)   ,ia(i_pedgeE)
+     .    ,ia(i_sedgeE)    ,ia(i_w)      ,ia(i_w0)       ,ia(i_wP)    
+     .    ,ia(i_num)       ,ia(i_ls)     ,ia(i_gradU1)   ,ia(i_gradU2)
+     .    ,ia(i_gradP)     ,ia(i_gradPc) ,ia(i_gradE)    ,ia(i_div)   
+     .    ,ia(i_mParameter),ia(i_iM)     ,ia(i_fluxlU1)  ,ia(i_fluxlU2)
+     .    ,ia(i_fluxlPc)   ,ia(i_fluxlE) ,ia(i_rCellU1)  ,ia(i_rCellU2)
+     .    ,ia(i_rCellPc)   ,ia(i_rCellE) ,ia(i_adU1)     ,ia(i_auU1)   
+     .    ,ia(i_alU1)      ,ia(i_bU1)    ,ia(i_bU10)     ,ia(i_iaU1)   
+     .    ,ia(i_jaU1)      ,ia(i_adU2)   ,ia(i_auU2)     ,ia(i_alU2)   
+     .    ,ia(i_bU2)       ,ia(i_bU20)   ,ia(i_iaU2)     ,ia(i_jaU2)   
+     .    ,ia(i_adPc)      ,ia(i_auPc)   ,ia(i_alPc)     ,ia(i_bPC)    
+     .    ,ia(i_iaPc)      ,ia(i_jaPc)   ,ia(i_adE)      ,ia(i_auE)    
+     .    ,ia(i_alE)       ,ia(i_bE)     ,ia(i_bE0)      ,ia(i_iaE) 
+     .    ,ia(i_jaE)       ,ia(i_u1 )    ,ia(i_u2)       ,ia(i_p)   
+     .    ,ia(i_pC)        ,ia(i_Pc1)    ,ia(i_en)       ,ia(i_en0)    
+     .    ,ia(i_ro)        ,ia(i_un)     ,ia(i_mdf)      ,ia(i_md)   
+     .    ,ia(i_ddU)      ,ia(i_temp)    ,ia(i_sx)       ,ia(i_eddyVisc)
+     .    ,numel          ,nnode         ,ndm        
+     .    ,nen            ,nen           ,ndfF           ,ndfE
+     .    ,dt             ,t             ,matrizU1       ,matrizU2     
+     .    ,matrizPc       ,matrizE       ,neqU1          ,neqU2
+     .    ,neqPc          ,neqE          ,nadU1          ,nadU2  
+     .    ,nadPc          ,nadE          ,solverU1       ,solverU2  
+     .    ,solverPc       ,solverE       ,solvTolPcg     ,solvTolBcg   
+     .    ,maxItSol       ,noutSimple    ,itResSimplePlot,sEnergy  
+     .    ,istep          ,cfl           ,re             ,prandtl 
+     .    ,grashof        ,vol           ,unsymPc        ,bs 
+     .    ,prename        ,noutCoo       ,flagCoo)                    
       simpleTime = get_time() - simpleTime 
       goto 50
 c ----------------------------------------------------------------------
@@ -1741,17 +1746,18 @@ c ...
 c ......................................................................
 c      
 c ...
+      fileOut = name(prename,0,53)
       call csrToCoo(ia(i_lin) ,ia(i_col) ,ia(i_aCoo)
      .             ,ia(i_iaPc),ia(i_jaPc)
      .             ,ia(i_alPc),ia(i_adPc),ia(i_auPc)
-     .             ,neqPc     ,nadPc
-     .             ,.false.   ,.true.)
+     .             ,neqPc     ,nadPc     ,matrizPc
+     .             ,unsymPc   ,.true.)
 c
 c ...
       call writeCoo(ia(i_lin),ia(i_col),ia(i_aCoo)
      .             ,ia(i_bPc),neqPc    ,neqPc+nadPc
-     .             ,prename  ,nout   
-     .             ,.true.)
+     .             ,fileOut  ,nout   
+     .             ,.true.   ,unsymPc)
 c ......................................................................
 c
 c ...
@@ -1853,11 +1859,25 @@ c ......................................................................
 c
 c ......................................................................
 c
-c ... Macro-comando:        
+c ... Macro-comando: PEDDYVIS
 c
 c ......................................................................
  5300 continue
-      print*, 'Macro 5300'
+c ...
+      print*, 'Macro PEDDYVIS'
+      call uformnode(ia(i_un),ia(i_eddyVisc),ddum,ddum,ia(i_x),ia(i_mdf)
+     .              ,ia(i_ix),ia(i_md),nnode,numel,ndm,nen,1,2)
+c ......................................................................
+c
+c ...      
+      fileout     = name(prename,istep,54)
+      nCell = 'elEddyVisc'
+      nNod  = 'noEddyVisc'
+      call write_res_vtk(ia(i_ix),ia(i_x),ia(i_eddyVisc),ia(i_un),nnode
+     .                  ,numel
+     .                  ,ndm,nen,1,fileout,nCell,nNod ,bvtk,4,t,istep
+     .                  ,nout) 
+c ......................................................................
       goto 50
 c ......................................................................
 c

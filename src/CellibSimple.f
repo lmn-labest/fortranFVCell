@@ -1038,40 +1038,42 @@ c * (EDGE-BASE-TVD)                                                    *
 c * -------------------------------------------------------------------*
 c * Parametros de entrada:                                             *
 c * -------------------------------------------------------------------*
-c * a      - nao definido                                              *
-c * x      - coordenadas dos vertices da celula central e do seus      *
+c * a        - nao definido                                            *
+c * x        - coordenadas dos vertices da celula central e do seus    *
 c * vizinhos                                                           *
-c * u      - variavel da iteracao anterior                             *
-c * u0     - variavel da iteracao anterior                             *
-c * u1     - variavel da iteracao anterior                             *
-c * rO     - massa especifica da celula e sua vizinhas em t -1, t e t+1*
-c * w      - campo de velocidade estimado                              *
-c * d      - nao definidp                                              *
-c * grad   - gradiente u reconstruido da celula                        *
-c * gradU1 - gradiente u1 reconstruido da celula                       *
-c * gradP  - gradiente p  reconstruido da celula                       *
-c * div    - divergente da velocidade                                  *
-c * fluxl  - limitador de fluxo na celulas                             *
-c * k      - propriedades da celula e do seus vizinhos                 *
-c * rm     - nao definido                                              *
-c * im     - nao definido                                              *
-c *  p     - nao definido                                              *
-c * sedge  - valores da condicoes de contorno por aresta               *
-c * dt     - passo de tempo                                            *  
-c * pedge  - tipo de condicao de contorno por aresta                   *
-c * viz    - vizinhos da celula                                        *
-c * nen    - numeros de nos por celula                                 *
-c * nshared- numeros de faces por celulas                              *
-c * iws1   - 1 - sistema de equacoes                                   *
-c *        - 2 - reconstruacao de gradiente                            *
-c * iws2   - 1 - direcao 1                                             *
-c *        - 2 - direcao 2                                             *
-c * nel    - numero da celula                                          *
-c * sn(2,i)- nos da aresta i                                           *
-c * acod   - codigo para o calculo da area                             *
-c *         ( 3 - triangulo; 4 - quadrilatero)                         *
-c * mP     - parametros da equacao de momentos(cfl,Reynalds)           *
-c * bs     - Euller Backward de segunda ordem                          *
+c * u        - variavel da iteracao anterior                           *
+c * u0       - variavel da iteracao anterior                           *
+c * u1       - variavel da iteracao anterior                           *
+c * rO       - massa especifica da celula e sua vizinhas em            *
+c * t -1, t e t+1                                                      *
+c * w        - campo de velocidade estimado                            *
+c * d        - nao definidp                                            *
+c * grad     - gradiente u reconstruido da celula                      *
+c * gradU1   - gradiente u1 reconstruido da celula                     *
+c * gradP    - gradiente p  reconstruido da celula                     *
+c * div      - divergente da velocidade                                *
+c * fluxl    - limitador de fluxo na celulas                           *
+c * k        - propriedades da celula e do seus vizinhos               *
+c * rm       - nao definido                                            *
+c * im       - nao definido                                            *
+c *  p       - nao definido                                            *
+c * sedge    - valores da condicoes de contorno por aresta             *
+c * dt       - passo de tempo                                          *  
+c * pedge    - tipo de condicao de contorno por aresta                 *
+c * viz      - vizinhos da celula                                      *
+c * nen      - numeros de nos por celula                               *
+c * nshared  - numeros de faces por celulas                            *
+c * iws1     - 1 - sistema de equacoes                                 *
+c *          - 2 - reconstruacao de gradiente                          *
+c * iws2     - 1 - direcao 1                                           *
+c *          - 2 - direcao 2                                           *
+c * nel      - numero da celula                                        *
+c * sn(2,i)  - nos da aresta i                                         *
+c * acod     - codigo para o calculo da area                           *
+c *          ( 3 - triangulo; 4 - quadrilatero)                        *
+c * mP       - parametros da equacao de momentos(cfl,Reynalds)         *
+c * eddyVisc - parametros da equacao de momentos(cfl,Reynalds)         *
+c * bs       - Euller Backward de segunda ordem                        *
 c * -------------------------------------------------------------------*
 c * Parmetros de saida:                                                *
 c * -------------------------------------------------------------------*
@@ -1083,10 +1085,11 @@ c * im     - interploacao de momentos para velocidade nas faces        *
 c * grad   - gradiente (GREEN GAUSS LINEAR)                            *
 c * -------------------------------------------------------------------*
 c **********************************************************************
-      subroutine cell_si_wm_eb_i_ggl(a,x,u,u0,u1,w,d,grad,gradU1,gradP
-     .                             ,div,iM,fluxl,k,rm,p,sedge,dt,pedge
-     .                             ,viz,nshared,ndm,iws1,iws2,nel,sn
-     .                             ,acod,Mp,bs)
+      subroutine cell_si_wm_les_eb_i_ggl(a,x,u,u0,u1,w,d,grad,gradU1
+     .                                  ,gradP,div,iM,fluxl,k,rm,p,sedge
+     .                                  ,dt,pedge,viz,nshared,ndm
+     .                                  ,iws1,iws2,nel,sn
+     .                                  ,acod,mP,eddyVisc,bs)
       implicit none
       include 'simple.fi'
       real*8 areacell,uf,gf(2),gfn,gfk,w(ndm,*),p,wf(ndm),wfn,cv,cvc
@@ -1096,11 +1099,24 @@ c **********************************************************************
       real*8 a(*),sp,xc(3,5),x(ndm,nshared,nshared+1),dfd,nk,um(4),cd
       real*8 sedge(3,nshared+1),ksi(3,4),eta(3,4),n(3,4),meta(4)
       real*8 mksi(4),area(5),ap,u0(5),u1(5)
-      real*8 stressW(4),yPLus(4)
-      real*8 u(5),ca(4),alpha,k(10,*),xm(3,4),grad(ndm,*)
+      real*8 stressW(4),yPLus(4),yPLusMax
+      real*8 u(5),ca(4),alpha,k(10,*),xm(3,4)
       real*8 eps,cfl,re,ug(4),xcg(3,4),kf,div(5)
-      real*8 gradP(ndm,*),gradU1(ndm,*)
+      real*8 gradP(ndm,*),gradU1(ndm,*),grad(ndm,*)
       real*8 pf,p1,p2,pface,mKsiF(4),aNb
+c ... LES
+      real*8 uc0,uc1,dMin
+      real*8 eddyVisc(5),modS,modSd,filtro,lMin,viscEf1,viscEf2
+      real*8,parameter :: Cs  = 0.2d0
+      real*8,parameter :: Cw  = 0.325d0
+      real*8,parameter :: r23 = 0.666666666666667d0 ! 2.0/3.0
+      real*8,parameter :: r13 = 0.333333333333333d0 ! 1.0/3.0
+      real*8,parameter :: VanDriest = 26.d0
+      real*8,parameter :: vonKarman = 0.4187d0
+      real*8 a1,a2,a3,g11,g12,g21,g22
+      integer iCodLes  
+      logical wall
+c .......................................................................
       integer pedge(*),viz(*),viznel,iws1,iws2,nel
       integer ndm,nshared,i,j,icod,acod,idcell,sn(2,*),l
       real*8 cp,const,ZERO
@@ -1117,7 +1133,9 @@ c ... 5 - Mid - Mod - TVD
 c ... 6 - MUSCL - TVD
 c ... 7 - OSHER - TVD
       icod   = 1 
+      iCodLes= 1
       idcell = nshared + 1
+      wall   = .false.
 c .....................................................................
 c
 c ...      
@@ -1130,9 +1148,35 @@ c ... propriedeade da celula
       specificMassA=  k(2,idCell)
       cc           =  k(6,idCell)
       icod         =  k(7,idCell)
+      iCodLes      =  k(8,idCell)
       vm           = dsqrt(w(1,idCell)*w(1,idCell) 
      .                   + w(2,idCell)*w(2,idCell))
+c .....................................................................
+c
+c ... calculo de yPLus e Tensao da parede
+      do i = 1, nshared
+        viznel = viz(i)
+        yPLus(i)   = 0.0d0
+        stressW(i) = 0.0d0
+c ...
+        if( viznel .lt. 0) then
+          if(pedge(i) .eq. 0 ) then
+            wall = .true.
+c ... velocidade tangencial a face
+            wfn = dabs(w(1,idCell)*eta(1,i) + w(2,idCell)*eta(2,i))
+            if(wfn .ne. 0.0d0) then
+              call wallModel(yPlus(i)     ,stressW(i),viscosity
+     .                      ,specificMassA,wfn      ,ca(i),nel)
+            endif
+          endif
+        endif
+c .....................................................................
+      enddo
+c .....................................................................
+c
+c ...
       if( iws1 .eq. 7) goto 700
+      if( iws1 .eq. 8) goto 800
 c .....................................................................
 c
 c ... criando celulas fantasma para o contorno  
@@ -1177,26 +1221,6 @@ c ...
 c .....................................................................
 c
   100 continue
-c ... calculo de yPLus e Tensao da parede
-      do i = 1, nshared
-        viznel = viz(i)
-        yPLus(i)   = 0.0d0
-        stressW(i) = 0.0d0
-c ...
-        if( viznel .lt. 0) then
-          if(pedge(i) .eq. 0 ) then
-c ... velocidade tangencial a face
-            wfn = dabs(w(1,idCell)*eta(1,i) + w(2,idCell)*eta(2,i))
-            if(wfn .ne. 0.0d0) then
-              call wallModel(yPlus(i)     ,stressW(i),viscosity
-     .                      ,specificMassA,wfn      ,ca(i),nel)
-            endif
-          endif
-        endif
-c .....................................................................
-      enddo
-c .....................................................................
-c
 c ...
       p            = 0.d0
       pf           = 0.d0
@@ -1235,6 +1259,7 @@ c ... calculo da pressao na face atraves de reconstrucao
 c .....................................................................
 c
 c ... parade  
+c         print*,yPlus,stressW,w(iws2,idCell),wfn,eta(iws2,i),nel
           if(pedge(i) .eq. 0 ) then
             if( yPlus(i) .lt.  11.81d0) then
                ap = viscosity*meta(i)/ca(i)
@@ -1286,8 +1311,11 @@ c ...
         else
 c ... interpolacao da propriedaes
           alpha = mKsiF(i)/mksi(i)
-c ... media harmonica  
-          kf    = alpha/viscosity + (1.0d0-alpha)/k(1,i) 
+c ... viscosidade efetiva
+          viscEf1= viscosity + eddyVisc(idCell)  
+          viscEf2= k(1,i)    + eddyVisc(i) 
+c ... media harmonica  visosidade molevular
+          kf    = alpha/viscEf1 + (1.0d0-alpha)/viscEf2 
           kf    = 1.0d0/kf
 c .....................................................................
           wf(1) = (1.0d0-alpha)*w(1,idcell)    + alpha*w(1,i)
@@ -1314,24 +1342,46 @@ c ... fluxo convectivo de primeira ordem
           rof   = k(2,idCell)
           cv    = rof*wfn*meta(i)
 c ... fluxo convectivo de ordem superior
-          if(cv.lt.0.0d0) then
-            du  = u(idcell) - u(i) + eps 
-            gpk = grad(1,i)*(xc(1,idcell)-xc(1,i))
-     .          + grad(2,i)*(xc(2,idcell)-xc(2,i))
-            alpha = mKsiF(i)/mksi(i)
-            r     = 2.0d0*gpk/du - 1.0d0
-            cvc   = (1.0d0-alpha)*limit(r,icod)*du
-          else  
-            du  = u(i) - u(idcell) + eps 
-            gpk = (grad(1,idCell)*ksi(1,i)
-     .           + grad(2,idCell)*ksi(2,i))*mksi(i)
-            alpha = mKsiF(i)/mksi(i)   
-            r     = 2.0d0*gpk/du - 1.0d0
-            cvc   = alpha*limit(r,icod)*du
-          endif
-c ... interpolacao unidirecional  
-          cvc   = cvc +  gf(1)*km(1,i) + gf(2)*km(2,i)
+c
+c ... central-differencing scheme
+          if(icod .eq. 9) then
+            uc0 = u(i)      
+     .          + grad(1,i)*(xm(1,i) - xc(1,i))
+     .          + grad(2,i)*(xm(2,i) - xc(2,i))  
+            uc1 = u(idCell) 
+     .          + grad(1,idCell)*d(1,i) + grad(2,idCell)*d(1,i)   
+            du  = 0.5d0*(uc0 + uc1)              
+            if(cv.lt.0.0d0) then
+              cvc = du - u(idCell)
+            else
+              cvc = du - u(i)
+            endif
 c .....................................................................
+c
+c ... interpolcao TVD
+          else
+            if(cv.lt.0.0d0) then
+              du    = u(idcell) - u(i) + eps 
+              gpk   = grad(1,i)*(xc(1,idcell)-xc(1,i))
+     .              + grad(2,i)*(xc(2,idcell)-xc(2,i))
+              alpha = mKsiF(i)/mksi(i)
+              r     = 2.0d0*gpk/du - 1.0d0
+              cvc   = (1.0d0-alpha)*limit(r,icod)*du
+            else  
+              du    = u(i) - u(idcell) + eps 
+              gpk   = (grad(1,idCell)*ksi(1,i)
+     .              + grad(2,idCell)*ksi(2,i))*mksi(i)
+              alpha = mKsiF(i)/mksi(i)   
+              r     = 2.0d0*gpk/du - 1.0d0
+              cvc   = alpha*limit(r,icod)*du
+            endif
+c ... interpolacao unidirecional  
+            cvc   = cvc +  gf(1)*km(1,i) + gf(2)*km(2,i)
+c .....................................................................
+          endif
+c .....................................................................
+c
+c ...
           a(i) = a(i) + max(-cv,0.0d0)
           sp   = sp   + cv
           p    =  p   - cv*cvc
@@ -1482,6 +1532,7 @@ c ...
   600 continue
       return
 c .....................................................................
+c
 c .. CFL e Reynalds
   700 continue
 c ... cfl number
@@ -1490,7 +1541,8 @@ c ... cfl number
 c .....................................................................
 c
 c ... Reynolds number
-      re = (specificMassA*vm*dsqrt(area(idcell)))/viscosity
+      re = specificMassA*vm*dsqrt(area(idcell))
+      re = re/(viscosity+eddyVisc(idCell))
       Mp(2) = re
 c .....................................................................
 c
@@ -1548,7 +1600,137 @@ c
 c ...
       Mp(8) = dfd     ! entrada de massa 
       Mp(9) = p       ! saida de massa
+      return
 c ......................................................................
+c
+c ...              
+  800 continue
+c ... vetor que une os centroides dos vizinho 
+c     do i = 1, ndm
+c       do l = 1, nshared
+c ... centroide l  
+c         eta(i,l) = xcg(i,sn(2,l)) - xcg(i,sn(1,l))    
+c       enddo
+c     enddo
+c ... vetor normal com o modulo igual a arestas
+c     do l = 1, nshared
+c       n(1,l) = eta(2,l)
+c       n(2,l) =-eta(1,l)
+c     enddo
+c .....................................................................
+c
+c ... area                 
+c     area(1) = areacell(eta,acod)
+c .....................................................................
+c
+c ... smagorinsky (grad -> gradU1; gradU1 -> gradU2)
+      if(iCodLes .eq. 1 .or. iCodLes .eq. 0) then 
+c ... |S|
+        a1     =     grad(1,idCell)                ! du1/dx1                 
+        a2     =   gradU1(2,idCell)                ! du2/dx2
+        a3     =   grad(2,idCell)+gradU1(1,idCell) ! du2/dx1 + du1/dx2
+        modS   = dsqrt(2.0d0*(a1*a1+a2*a2)+a3*a3) 
+c ... Cs*filtro
+        filtro = dsqrt(area(idCell))
+        lMin   = Cs*filtro
+c ... near wall Van Driest
+c       yPlusMax = 0.0d0
+        if(wall) then
+          yPlusMax = yPlus(1)
+          dMin     =    ca(1) 
+          do i = 2, nshared
+            yPlusMax = max(yPlusMax,yPlus(i))
+            dMin     = min(dMin    ,   ca(i)) 
+          enddo
+c        lMin= min(lMin,lMin*(1.0d0-dexp(-yPlusMax/vanDriest)))
+          lMin = min(vonKarman*dMin,lMin)
+          lMin = lMin*(1.0d0-dexp(-yPlusMax/vanDriest))
+        endif
+c ... viscosidade turbulenta
+        eddyVisc(idCell) = specificMassA*(lMin)*(lMin)*modS
+c .....................................................................
+c
+c ... Wall-Adpating Local Eddy-Viscosity (WALE) model
+      elseif(iCodLes .eq. 2) then
+c ... S:S - contracao do tensor de tensoes
+        a1     =     grad(1,idCell)                ! du1/dx1                 
+        a2     =   gradU1(2,idCell)                ! du2/dx2
+        a3     =   grad(2,idCell)+gradU1(1,idCell) ! du1/dx2 + du2/dx1
+        modS   =   a1*a1+a2*a2+0.5d0*a3*a3         ! S:S
+c .....................................................................
+c
+c ... Sd:Sd
+        g11    =   grad(1,idCell)*  grad(1,idCell) ! du1/dx1*du1/dx1
+        g22    = gradU1(2,idCell)*gradU1(2,idCell) ! du2/dx2*du2/dx2
+        g12    =   grad(2,idCell)*  grad(2,idCell) ! du1/dx2*du1/dx2
+        g21    = gradU1(1,idCell)*gradU1(1,idCell) ! du2/dx1*du2/dx1
+        a3     = r13*(g11+g22)
+        a1     = g11 - a3
+        a2     = g22 - a3
+        a3     = g12 + g21
+        modSd  = a1*a1+a2*a2+0.5d0*a3*a3           !Sd:Sd
+c .....................................................................
+c
+c ...
+        modS   = (modSd**(1.5d0))/(modS**(2.5d0) + modSd**(1.25)+eps)
+c .....................................................................
+c
+c ... Cs*filtro
+        filtro = dsqrt(area(idCell))
+        lMin   = Cw*filtro
+c ... near wall Van Driest
+c       yPlusMax = 0.0d0
+        if(wall) then
+          yPlusMax = yPlus(1)
+          dMin     =    ca(1) 
+          do i = 2, nshared
+            yPlusMax = max(yPlusMax,yPlus(i))
+            dMin     = min(dMin    ,   ca(i)) 
+          enddo
+c        lMin= min(lMin,lMin*(1.0d0-dexp(-yPlusMax/vanDriest)))
+          lMin = min(vonKarman*dMin,lMin)
+          lMin = lMin*(1.0d0-dexp(-yPlusMax/vanDriest))
+        endif
+c ... viscosidade turbulenta
+        eddyVisc(idCell) = specificMassA*(lMin)*(lMin)*modS
+c        print*,nel,modS,modSd,g11,g22,g12,g21
+c .....................................................................
+c 
+c ... Vreman's Model                                   
+      elseif(iCodLes .eq. 3) then
+c ... filtro*filtro
+        filtro = area(idCell)
+c ... alpha
+        g11    =   grad(1,idCell)                  ! du1/dx1
+        g22    = gradU1(2,idCell)                  ! du2/dx2
+        g21    =   grad(2,idCell)                  ! du1/dx2
+        g12    = gradU1(1,idCell)                  ! du2/dx1
+c ...
+        a1     = filtro*(g11*g11+g21*g21)
+        a2     = filtro*(g12*g12+g22*g22)
+        a3     = filtro*(g11*g12+g21*g22)
+        modS   = a1*a2 - a3*a3                             !B           
+        modSd  = g11*g11 + g22*g22 + g12*g12 + g21*g21     !alpha:alpha 
+c .....................................................................
+c
+c ...
+        modS   = dsqrt(modS/(modSd+eps))
+c .....................................................................
+c
+c ... viscosidade turbulenta
+        eddyVisc(idCell) = specificMassA*2.5d0*Cs*Cs*modS
+c       print*,nel,modS,modSd,g11,g22,g12,g21 
+c       print*,nel, eddyVisc(idCell)
+      endif
+c ......................................................................
+c
+c     if( eddyVisc(idCell) .gt. 1.0d-2) then
+c       print*,nel,eddyVisc(idCell),area(idCell),lMin,Cs*filtro,dMin
+c     endif
+c ... modificao da pressao ( u0 -> pressao)
+c     u0(idCell) = u0(idCell) 
+c    .         - r23*eddyVisc(idCell)*(grad(1,idCell)+gradU1(2,idCell))
+c .....................................................................
       return  
       end
 c **********************************************************************

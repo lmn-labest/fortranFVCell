@@ -145,9 +145,15 @@ c ......................................................................
         write(StrExtensao,'( A  )') adjustl(StrExtensao)
         StrExtensao='_log_simple_'//trim(StrExtensao)//'.txt'
       elseif(code .eq. 52) then
+        write(strextensao,'( i6 )') numarq
+        write(strextensao,'( a  )') adjustl(strextensao)
+        strextensao='coo_'//trim(strextensao)
+      elseif(code .eq. 53) then
+        strextensao='_bcoo'
+      elseif(code .eq. 54) then
         write(StrExtensao,'( I6 )') NumArq
         write(StrExtensao,'( A  )') adjustl(StrExtensao)
-        StrExtensao='coo_'//trim(StrExtensao)
+        StrExtensao='_eddyVisc_'//trim(StrExtensao)//'.vtk'
       endif    
 c ................................................................
 c

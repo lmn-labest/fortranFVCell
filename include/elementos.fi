@@ -1,7 +1,2 @@
-c*****************************Svn***************************************      
-c*$Date: 2010-09-06 18:52:24 -0300 (Mon, 06 Sep 2010) $                 
-c*$Rev: 847 $                                                           
-c*$Author: henrique $                                                   
-c***********************************************************************          
       common /elementos/ nbar2,ntria3,nquad4,ntetra4,nhexa8
       integer nbar2(2),ntria3(2),nquad4(2),ntetra4(2),nhexa8(2)
