@@ -43,6 +43,7 @@ c ... simple
       integer*8 i_div,i_mParameter
 c ... turbulence
       integer*8 i_eddyVisc
+      logical flagTurbulence
 c ... Coo
       integer*8 i_lin,i_col,i_aCoo
 c ......................................................................
@@ -129,7 +130,7 @@ c ... Macro-comandos disponiveis:
      .           'underPc ','setpcell','pctemp  ','pcgrad  ','simpleC ',
      .           'underP  ','underU  ','setelev ','dt      ','config  ',
      .           'pgradU1 ','pgradU2 ','pgradU3 ','skewC   ','pgeo    ',
-     .           'pgradT  ','pgradE  ','pbcoo   ','pcoo    ','        ',
+     .           'pgradT  ','pgradE  ','pbcoo   ','pcoo    ','turb    ',
      .           'pvort2D ','bench   ','pEddyVis','        ','        ',
      .           'underRo ','tolPcg  ','tolBiPcg','maxItSol','stop    '/
 c ----------------------------------------------------------------------
@@ -137,6 +138,8 @@ c
 c ...
       bvtk    = .true.
       flagCoo = .false.
+c ...
+      flagTurbulence = .false.
 c ...
       nmacro1 = 0 
       nmacro2 = 0 
@@ -466,7 +469,7 @@ c ....................................................................
      .3100,3200,3300,3400,3500, !underPc,setpcell,pctemp  ,pcgrad  ,simpleC 
      .3600,3700,3800,3900,4000, !underP ,underU  ,setelev ,dt      ,config  
      .4100,4200,4300,4400,4500, !pgradU1,pgradU2 ,pgradU3 ,skewC   ,pgeo    
-     .4600,4700,4800,4900,5000, !pgradT ,pgradE  ,pbcoo   ,pcoo    ,        
+     .4600,4700,4800,4900,5000, !pgradT ,pgradE  ,pbcoo   ,pcoo    ,turb    
      .5100,5200,5300,5400,5500, !pvort2D,bench   ,pEddyVis,        ,        
      .5600,5700,5800,5900,6000)j!underRo,tolPcg  ,tolBiPcg,maxItSol,stop    
 c ----------------------------------------------------------------------
@@ -1055,7 +1058,7 @@ c ...
      .    ,maxItSol       ,noutSimple    ,itResSimplePlot,sEnergy  
      .    ,istep          ,cfl           ,re             ,prandtl 
      .    ,grashof        ,vol           ,unsymPc        ,bs 
-     .    ,prename        ,noutCoo       ,flagCoo)                    
+     .    ,prename        ,noutCoo       ,flagTurbulence ,flagCoo)   
       simpleTime = get_time() - simpleTime 
       goto 50
 c ----------------------------------------------------------------------
@@ -1782,11 +1785,12 @@ c ......................................................................
 c
 c ......................................................................
 c
-c ... Macro-comando:        
+c ... Macro-comando: TURB   
 c
 c ......................................................................
  5000 continue
-      print*, 'Macro 5000'
+      print*, 'Macro TURB'
+      flagTurbulence = .true.
       goto 50
 c ......................................................................
 c

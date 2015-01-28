@@ -126,7 +126,7 @@ c *********************************************************************
      .                  ,maxIt    ,noutSimple,itResSimplePlot,sEnergy   
      .                  ,istep    ,cfl       ,reynalds       ,prandtl   
      .                  ,grashof  ,vol       ,unsymPc        ,bs
-     .                  ,prename  ,noutCoo   ,flagCoo)
+     .                  ,prename  ,noutCoo   ,flagTurbulence ,flagCoo)
 c...
       implicit none
       include 'time.fi'
@@ -166,7 +166,7 @@ c ...
       integer itSimple,conv
       integer noutSimple,noutCoo
       logical itResSimplePLot,solvU1,solvU2,solvE,flagCoo
-      logical ResAbs,sEnergy,xMomentum,yMomentum
+      logical ResAbs,sEnergy,xMomentum,yMomentum,flagTurbulence
 c ... variaveis
       real(8) cfl,reynalds,prandtl,grashof,vol
       real(8) ZERO,kZero
@@ -313,11 +313,13 @@ c   .                 ,nen,1,2)
         grSimpleTime = get_time() - grSimpleTime
 c .....................................................................
 c
-c ...
-        call turbulenceLes(p    ,w  ,gradU1,gradU2 , x   ,eddyVisc
-     .                    ,sedge,e  ,    ie, nelcon,pedge,ix
-     .                    ,numel,ndm,   nen,nshared,ndf
-     .                    ,nshared,8,0,1) 
+c ...   
+        if(flagTurbulence) then
+          call turbulenceLes(p    ,w  ,gradU1,gradU2 , x   ,eddyVisc
+     .                      ,sedge,e  ,    ie, nelcon,pedge,ix
+     .                      ,numel,ndm,   nen,nshared,ndf
+     .                      ,nshared,8,0,1)
+        endif
 c .....................................................................
 c ... SIMPLER 
 c        if(simpleR) then
