@@ -85,14 +85,13 @@ c * superior e diagonal)                                              *
 c * ----------------------------------------------------------------- *
 c * Parametros de entrada :                                           *
 c * ----------------------------------------------------------------- *
-c * ad     - diagonal da matriz A                                     *
+c * ad     - diagonal principal de a                                  *
+c * al     - parte interior de a                                      *
+c * ad     - parte superior de a                                      *
 c * x      - valores do vetor a ser multiplicado por A                *
-c * y      - nao definido                                             *  
-c * al(nad)- parte triangular inferior de A no formato CSR            *
-c * au(*)  - parte triangular superior de A no formato CSC            *                                             *
+c * y      - nao definido                                             *
 c * ia     - ponteiro do arranjo do csr da matrix A                   *
 c * ja     - arranjo csr da matriz A                                  *
-c * la     - valores locais da matriz A da celula P                   *
 c * neq    - numero de equacoes                                       *
 c * ----------------------------------------------------------------- *
 c * Parametros de saida :                                             *
@@ -142,14 +141,12 @@ c * simetrico; coeficiente de A simetrico; ad-diagonal;al-inferior)   *
 c * ----------------------------------------------------------------- *
 c * Parametros de entrada :                                           *
 c * ----------------------------------------------------------------- *
-c * ad     - diagonal da matriz A                                     *
+c * ad     - diagonal principal de a                                  *
+c * al     - parte interior de a                                      *
 c * x      - valores do vetor a ser multiplicado por A                *
-c * y      - nao definido                                             *  
-c * al(nad)- parte triangular inferior de A no formato CSR            *
-c * au(*)  - nao utilizado                                            *  
+c * y      - nao definido                                             *
 c * ia     - ponteiro do arranjo do csr da matrix A                   *
 c * ja     - arranjo csr da matriz A                                  *
-c * la     - valores locais da matriz A da celula P                   *
 c * neq    - numero de equacoes                                       *
 c * ----------------------------------------------------------------- *
 c * Parametros de saida :                                             *
@@ -198,7 +195,6 @@ c
 c *********************************************************************
 c  * MATVEC_CSRD_SYM: produto matriz-vetor y = Ax  (A simetrica),     *
 c *                   coef. de A no formato CSR e armazenamento       *
-c *                   da parte superior, com loops aninhados.         *                                  
 c * ----------------------------------------------------------------- *
 c * Parametros de entrada :                                           *
 c * ----------------------------------------------------------------- *
@@ -249,6 +245,56 @@ c ...    Armazena o resultado em y(i):
 c
          y(i) = t
       enddo    
+      matvectime = get_time() - matvectime
+      return
+      end
+c **********************************************************************
+c
+c *********************************************************************
+c * MATVEC_ELLPACK : produto matriz vetor no formato ELLPACK          *
+c * ----------------------------------------------------------------- *
+c * Parametros de entrada :                                           *
+c * ----------------------------------------------------------------- *
+c * ad        - diagonal da matriz A                                  *
+c * a         - matriz         r a ser multiplicado por A             *
+c * x         - valores do vetor a ser multiplicado por A             *
+c * y         - nao definido                                          *  
+c * ifEllpack - informacao do ellpack(nl(1)-nshared; nl(2) = neq + 1  *  
+c * ja        - arranjo ellpack                                       *
+c * neq       - numero de equacoes                                    *
+c * ----------------------------------------------------------------- *
+c * Parametros de saida :                                             *
+c * ----------------------------------------------------------------- *
+c * y    - vetor com a operacao Ax                                    *
+c * ----------------------------------------------------------------- *
+c *********************************************************************
+      subroutine matvec_ellpack(ad,a,ddum,x,y,nl,ja,neq)
+      implicit none
+      include 'time.fi'
+      integer nl(2)
+      integer ja(nl(1),*),neq,i
+      real*8 ad(*),x(*),y(*),a(nl(1),*)
+      real*8 t1,t2,t3,t4,t5,ddum
+c ......................................................................
+      matvectime = get_time() - matvectime
+      if( nl(1) .eq. 3 ) then
+        do i = 1, neq
+          t4   = ad(i)*x(i)
+          t1   =  a(1,i)*x(ja(1,i))
+          t2   =  a(2,i)*x(ja(2,i))
+          t3   =  a(3,i)*x(ja(3,i))
+          y(i) = t1 + t2 + t3 + t4 
+        enddo 
+      elseif(nl(1) .eq. 4 ) then         
+        do i = 1, neq
+          t5   = ad(i)*x(i)
+          t1   =  a(1,i)*x(ja(1,i))
+          t2   =  a(2,i)*x(ja(2,i))
+          t3   =  a(3,i)*x(ja(3,i))
+          t4   =  a(4,i)*x(ja(4,i))
+          y(i) = t1 + t2 + t3 + t4 + t5
+        enddo
+      endif
       matvectime = get_time() - matvectime
       return
       end

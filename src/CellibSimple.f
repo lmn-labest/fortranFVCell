@@ -1107,7 +1107,7 @@ c **********************************************************************
 c ... LES
       real*8 uc0,uc1,dMin
       real*8 eddyVisc(5),modS,modSd,filtro,lMin,viscEf1,viscEf2
-      real*8,parameter :: Cs  = 0.2d0
+      real*8,parameter :: Cs  = 0.1d0
       real*8,parameter :: Cw  = 0.325d0
       real*8,parameter :: r23 = 0.666666666666667d0 ! 2.0/3.0
       real*8,parameter :: r13 = 0.333333333333333d0 ! 1.0/3.0
@@ -1304,6 +1304,11 @@ c ... localmente parabolica
             wfn = w(1,idcell)*n(1,i) + w(2,idcell)*n(2,i)
             cv  = specificMassA*wfn*meta(i)
             sp  = sp + cv
+c ... tensao tagencial
+          else if(pedge(i) .eq. 5) then
+            p   =  p + sedge(iws2,i)*meta(i)
+c ... Wall modelegin H. Werner and H. Wengle 
+          else if(pedge(i) .eq. 6) then
           endif
 c .....................................................................
 c
@@ -1689,7 +1694,7 @@ c       yPlusMax = 0.0d0
           enddo
 c        lMin= min(lMin,lMin*(1.0d0-dexp(-yPlusMax/vanDriest)))
           lMin = min(vonKarman*dMin,lMin)
-          lMin = lMin*(1.0d0-dexp(-yPlusMax/vanDriest))
+c         lMin = lMin*(1.0d0-dexp(-yPlusMax/vanDriest))
         endif
 c ... viscosidade turbulenta
         eddyVisc(idCell) = specificMassA*(lMin)*(lMin)*modS
@@ -1714,7 +1719,7 @@ c ...
 c .....................................................................
 c
 c ...
-        modS   = dsqrt(modS/(modSd+eps))
+        modS   = dsqrt((modS+eps)/(modSd+eps))
 c .....................................................................
 c
 c ... viscosidade turbulenta

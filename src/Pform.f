@@ -40,9 +40,10 @@ c * ndfF   - graus de liberdade do fluido                             *
 c * dt     - passo de tempo                                           *
 c * alpha  -                                                          *
 c * struc  - estrutura da matriz A                                    *
-c *        1 - CSR ( ad - diag prin; a - superio e inferior)          *
-c *        2 - CSR (  a - diag prin, superior e inferior              *
-c *        3 - CSRC( ad - diag prin, au - superior, al - inferior)    *
+c *        1 -    CSR ( ad - diag prin; a - superio e inferior)       *
+c *        2 -    CSR (  a - diag prin, superior e inferior           *
+c *        3 -    CSRC( ad - diag prin, au - superior, al - inferior) *
+c *        4 - ELLPACK(ad - diag prin, al - inferior e superior)      *
 c * unsym  - matriz nao simetrica                                     *
 c * iws    - instrucao de montagem                                    *
 c * iws1   - 1 - x, 2 - y, 3 - z                                      *

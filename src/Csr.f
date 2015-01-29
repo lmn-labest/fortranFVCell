@@ -147,17 +147,17 @@ c *********************************************************************
       integer n,l,k,jk,iak,j,ipont,i,iaj,cod
       logical unsysm,forces,matrix
 c ...
-      do i = 1 , nshared
-        la(i) = -la(i)
-      enddo
+c      do i = 1 , nshared
+c        la(i) = -la(i)
+c      enddo
 c .....................................................................
 c
 c ... CSRD - CSR modificado
-      if(cod .eq. 1 ) then
+      if(cod .eq. 1) then
 c 
 c ... linha da matriz
         n      = ld(nshared+1)
-        if(matrix) ad(n)  = la(nshared+1)
+        if(matrix) ad(n) = la(nshared+1)
         if(forces) f(n)  = p
         ipont  = ia(n)
         iak    = ia(n+1) - ia(n)
@@ -169,7 +169,7 @@ c ... loop nos vizinhos
               do i = 1, iak
                 k  = ipont + i - 1
                 jk = ja(k)
-                if( l .eq. jk) au(k) = la(j) 
+                if( l .eq. jk) au(k) = -la(j) 
               enddo 
             endif
           enddo
@@ -191,7 +191,7 @@ c ... loop nos vizinhos
             do i = 1, iak
               k  = ipont + i - 1
               jk = ja(k)
-              if( l .eq. jk .and. matrix) ad(k) = la(j) 
+              if( l .eq. jk .and. matrix) ad(k) = -la(j) 
             enddo 
           endif
         enddo
@@ -215,7 +215,7 @@ c              if(unsysm) au(iaj) = la(j)
             do i = 1, iak
               k  = ipont + i - 1
               jk = ja(k)
-              if( l .eq. jk .and. matrix) al(k) = la(j)
+              if( l .eq. jk .and. matrix) al(k) = -la(j)
             enddo
           endif
         enddo

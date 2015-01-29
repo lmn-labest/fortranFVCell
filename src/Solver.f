@@ -38,12 +38,12 @@ c ... ponteiros
       real*8 ad(*),al(*),au(*),x(*),b(*),tol
       integer iax(*),ja(*),maxit,neq,nad,k,code,matriz
       integer nlit
-c ... nao simetricos  
+c ... nao simetricos Csr
       external matvec_csrd,matvec_csr,matvec_csrc
       external matvec_csrd_omp
       external matvec_csrd_ilu2_omp,matvec_csrd_ilu4_omp
       external matvec_csrd_ilo2_ilu2_omp
-c ... simetricos      
+c ... simetricos Csr  
       external matvec_csrd_sym
       external matvec_csrd_sym_omp
       external matvec_csrd_sym_ilu2_omp
@@ -51,6 +51,9 @@ c ... simetricos
       external matvec_csrd_sym_ilo2_ilu2_omp
       external matvec_csrd_sym_ilo2_ilu4_omp
       external matvec_csrc_sym
+c ... Ellpac
+      external matvec_ellpack
+      external matvec_ellpack_omp
 c ... dot
       external dot
       external dot_omp,dot_omp2
@@ -142,8 +145,26 @@ c .....................................................................
 c
 c ... CSRC
         elseif(matriz .eq. 3) then
-          call pcg(neq,nad,iax,ja,ad,au,al,ia(i_m),b,x,ia(i_z),ia(i_r)
-     .            ,tol,maxit,matvec_csrc_sym,nlit,.true.)
+          call pcg(neq,nad,iax,ja,ad,au,al,ia(i_m),b,x,ia(i_z)
+     .            ,ia(i_r),tol,maxit,matvec_csrc_sym,nlit,.true.)
+c .....................................................................
+c
+c ... ELLPACK
+        elseif(matriz .eq. 4) then
+c ... OPENMP
+          if(openmpSolver) then
+              call pcg_omp(neq,nad,iax,ja,ad,au,al,ia(i_m),b,x,ia(i_z)
+c ... comum     
+     .                    ,ia(i_r),tol,maxit,matvec_ellpack_omp
+     .                    ,dot_ompL4,ia(i_threads_y),nlit,.false.)
+c .....................................................................
+c
+c ...
+          else
+            call pcg(neq,nad,iax,ja,ad,au,al,ia(i_m),b,x,ia(i_z)
+     .              ,ia(i_r),tol,maxit,matvec_ellpack,dot,nlit,.false.)
+          endif
+c .....................................................................
         endif
 c .....................................................................
         i_m         = dealloc('m       ')
@@ -198,24 +219,47 @@ c ... CSRD - coeficiente da matriz simetrica
           else
             call pbicgstab(neq,nad,iax,ja,ad,au,al,ia(i_m),b,x
      .                    ,ia(i_t),ia(i_v),ia(i_r),ia(i_p),ia(i_z)
-     .                    ,tol,maxit,matvec_csrd_sym,nlit,.true.)
+     .                    ,tol,maxit,matvec_csrd_sym,dot,nlit,.true.)
           endif 
         elseif(matriz .eq. 2) then
           write(*,2000)'Solver','Solver.f'
      .         ,'PBiCGSTAB nao implementado para o CSR'
           stop  
+c .....................................................................
+c
+c ...
         elseif(matriz .eq. 3) then
 c ... CSRC - coeficiente da matriz nao simetrica
            if(unsym) then 
              call pbicgstab(neq,nad,iax,ja,ad,au,al,ia(i_m),b,x
      .                     ,ia(i_t),ia(i_v),ia(i_r),ia(i_p),ia(i_z)
-     .                     ,tol,maxit,matvec_csrc,nlit,.true.)
+     .                     ,tol,maxit,matvec_csrc,dot,nlit,.true.)
 c ... CSRC - coeficiente da matriz simetrica
            else
              call pbicgstab(neq,nad,iax,ja,ad,au,al,ia(i_m),b,x
      .                     ,ia(i_t),ia(i_v),ia(i_r),ia(i_p),ia(i_z)
-     .                     ,tol,maxit,matvec_csrc_sym,nlit,.true.)
+     .                     ,tol,maxit,matvec_csrc_sym,dot,nlit,.true.)
            endif
+c .....................................................................
+c
+c ... ELLPACK
+        elseif(matriz .eq. 4) then
+c ... OPENMP
+          if(openmpSolver) then
+              call pbicgstab_omp(neq,nad,iax,ja,ad,au,al,ia(i_m),b,x
+     .                          ,ia(i_t),ia(i_v),ia(i_r),ia(i_p),ia(i_z)
+     .                          ,tol,maxit
+     .                          ,matvec_ellpack_omp
+     .                          ,dot_ompL4,nlit,.false.)
+c .....................................................................
+c
+c ...
+          else
+            call pbicgstab(neq,nad,iax,ja,ad,au,al,ia(i_m),b,x
+     .                    ,ia(i_t),ia(i_v),ia(i_r),ia(i_p),ia(i_z)
+     .                    ,tol,maxit,matvec_ellpack,dot,nlit,.false.)
+          endif
+c .....................................................................
         endif
 c .....................................................................
 c

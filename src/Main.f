@@ -166,14 +166,15 @@ c ... Euller Backward de segunda ordem
       bs     = .true.
 c ... reordenacao da equacoes para a diminucao da banda
       freord = .true.
-c ... tipo de armazenamento ( CSRD- 1 -> ad;a | CSR -> 2 - a | CSRC -> 3 - ad;au;al)
+c ... tipo de armazenamento ( CSRD- 1 -> ad;a      | CSR -> 2 - a 
+c                           | CSRC -> 3 - ad;au;al | ellPack -> 4 - ad,a)
 c ... CSRD - CSR com diagonal principal separada 
 c     CSR  - CSR 
 c     CSRC - CSRC
       matrizT1= 1
-      matrizU1= 1
-      matrizU2= 1
-      matrizPc= 1
+      matrizU1= 4
+      matrizU2= 4
+      matrizPc= 4
       matrizE = 1 
 c ... tsolver               ( PCG - 1|PBiCGSTAB - 2|PGMRES -3 )
       solverT1 = 2

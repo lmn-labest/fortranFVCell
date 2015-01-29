@@ -9,7 +9,10 @@ c * i_ja   - nao definido                                             *
 c * neq    - numero de equacao                                        *
 c * nad    - nao definido                                             *
 c * nshared- numero de aresta da malha                                *
-c * code   - 1 - csr                                                  *
+c * code   - 1 - csrd                                                 *
+c *        - 2 - csr                                                  *
+c *        - 3 - csrc                                                 *
+c *        - 4 - ellpack                                              *
 c * banda  - nao definido                                             *
 c * unsym  - matriz nao simetrica                                     *
 c * ----------------------------------------------------------------- *
@@ -142,6 +145,33 @@ c       i_id = dealloc(strId)
         i_ad = locate(strAd)
         i_al = locate(strAl)
         if(unsysm) i_au = locate(strAu)
+        i_au   = i_al
+c ....................................................................      
+c
+c ... ELLPACK (ad - diagonal principal; a - termos fora da diagonal )
+c              principal)
+      elseif(code .eq. 4) then
+c ...
+        i_ia   = alloc_4(strIA,  1,    2)  
+        i_ja   = alloc_4(strJa,nshared,neq)
+        call ellPackJa(ia(i_ia),ia(i_ja),ia(i_id),neq,nad,nshared)
+c .....................................................................
+c
+c ... reordenando grafo em ordem crescente
+c       call sortgraph(ia(i_ia),ia(i_ja),neq)
+c .....................................................................
+c
+c ... alocacao da matriz
+        i_ad   = alloc_8(strAd,      1,neq)
+        i_al   = alloc_8(strAl,nshared,neq)
+c .....................................................................
+        call azero(ia(i_ad),neq)
+        call azero(ia(i_al),nad)
+c       i_id = dealloc(strId)
+        i_ia = locate(strIa)
+        i_ja = locate(strJa)
+        i_ad = locate(strAd)
+        i_al = locate(strAl)
         i_au   = i_al
       endif       
 c ....................................................................      

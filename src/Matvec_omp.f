@@ -1013,6 +1013,64 @@ c$omp end single
       end
 c **********************************************************************
 c
+c *********************************************************************
+c * MATVEC_ELLPACK_OMP : produto matriz vetor no formato ELLPACK      *
+c *                                                     openmp        *
+c * ----------------------------------------------------------------- *
+c * Parametros de entrada :                                           *
+c * ----------------------------------------------------------------- *
+c * ad        - diagonal da matriz A                                  *
+c * a         - matriz         r a ser multiplicado por A             *
+c * x         - valores do vetor a ser multiplicado por A             *
+c * y         - nao definido                                          *  
+c * ifEllpack - informacao do ellpack(nl(1)-nshared; nl(2) = neq + 1  *  
+c * ja        - arranjo ellpack                                       *
+c * neq       - numero de equacoes                                    *
+c * ----------------------------------------------------------------- *
+c * Parametros de saida :                                             *
+c * ----------------------------------------------------------------- *
+c * y    - vetor com a operacao Ax                                    *
+c * ----------------------------------------------------------------- *
+c *********************************************************************
+      subroutine matvec_ellpack_omp(ad,a,ddum,x,y,nl,ja,neq)
+      implicit none
+      include 'time.fi'
+      integer nl(2)
+      integer ja(nl(1),*),neq,i
+      real*8 ad(*),x(*),y(*),a(nl(1),*)
+      real*8 t1,t2,t3,t4,t5,ddum
+c ......................................................................
+c$omp single          
+      matvectime = get_time() - matvectime
+c$omp end single
+      if( nl(1) .eq. 3 ) then
+c$omp do private(i,t1,t2,t3,t4)
+        do i = 1, neq
+          t4   = ad(i)*x(i)
+          t1   =  a(1,i)*x(ja(1,i))
+          t2   =  a(2,i)*x(ja(2,i))
+          t3   =  a(3,i)*x(ja(3,i))
+          y(i) = t1 + t2 + t3 + t4 
+        enddo 
+      elseif(nl(1) .eq. 4 ) then         
+c$omp do private(i,t1,t2,t3,t4,t5)
+        do i = 1, neq
+          t5   = ad(i)*x(i)
+          t1   =  a(1,i)*x(ja(1,i))
+          t2   =  a(2,i)*x(ja(2,i))
+          t3   =  a(3,i)*x(ja(3,i))
+          t4   =  a(4,i)*x(ja(4,i))
+          y(i) = t1 + t2 + t3 + t4 + t5
+        enddo
+c$omp enddo
+      endif
+c$omp single          
+      matvectime = get_time() - matvectime
+c$omp end single
+      return
+      end
+c **********************************************************************
+c
 c **********************************************************************
       real*8 function dot_omp(a,b,n)
 c **********************************************************************

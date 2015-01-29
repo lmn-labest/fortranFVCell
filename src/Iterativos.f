@@ -33,7 +33,7 @@ c *********************************************************************
       real*8 au(*),al(*),ad(*),x(*),b(*)
       real*8 r(*),z(*),m(*)
       real*8 d,conv,tol,alpha,beta,energy
-      real*8 dot,dx
+      real*8 dot
       integer neq,ia(*),ja(*)
       integer i,j,maxit,nad,nlit
       logical init
