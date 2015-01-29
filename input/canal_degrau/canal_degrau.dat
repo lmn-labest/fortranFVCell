@@ -1,0 +1,36 @@
+config 
+memoria 100 openMpCell true nThreadsCell 4 openMpSolver true nThreadsSolver 4 reord false bvtk true
+end config
+mesh
+nnode  7139 numel  6720 dim 2 ndf 0 ndfF 3 ndfE 0 maxno 4 numat 1
+materials
+1 75 1.0d-4 1.0d0 0.0 0.0 0.0d0 1.0d0 7 1
+end matrials
+insert canal_degrau_mesh.dat
+insert canal_degrau_res.dat
+end mesh
+setelev 1.0
+#-------simple----------------
+itSimple      500
+simpleC
+underU  1.0d0
+underPc 1.0d0
+tSimpU1 1.0d-3
+tSimpU2 1.0d-3
+tSimpPc 1.0d-3
+#tDinamic
+#------------------------------
+pgeo
+dt 0.001
+loop2    200  
+  loop1   10 
+    simple
+  next1
+  pveloc
+  ppres
+  pelev
+  pvort2D
+  pEddyVis
+  save
+next2  
+stop
