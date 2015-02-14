@@ -3,10 +3,11 @@ c * CELLLIB: biblioteca de celulas                                    *
 c * ------------------------------------------------------------------*
 c *  a      - nao definido                                            *
 c *  x      - coordenadas nodais                                      *
-c *  u      - temperatura na celula                                   *
-c *  u0     - temperatura na celula no passo anterior                 *
+c *  un     - volores nodais                                          *
+c *  u      - valor por celula                                        *
+c *  u0     - valor por celula                                        *
+c *  u1     - valor por celula                                        *
 c *  ro     - massa especifica da celula e sua vizinhas em t e t+1    *
-c *  un     - temperatura nodal                                       *
 c *  grad   - gradiente nas celulas                                   *
 c *  grad1  - gradiente nas celulas                                   *
 c *  grad2  - gradiente nas celulas                                   *
@@ -54,8 +55,9 @@ c *********************************************************************
      .                  ,dt   ,alpha  ,mP      ,eddyVisc,bs)
       implicit none
       include 'error.fi'
-      real*8 a(*),x(*),u(*),u0(*),u1(*),grad(*)
-      real*8 grad1(*),grad2(*),k(*)
+      real*8 a(*),x(*)
+      real*8 u(*),u0(*),u1(*)
+      real*8 grad(*),grad1(*),grad2(*),k(*)
       real*8 lls(*),w(*),dt,alpha,fluxl(*),d,sp(*),p(*),sedge(*),div(*)
       real*8 iM(*),Mp(*),ro(*),un(*),eddyVisc(*)
       integer pedge(*),viz(*),nen,nshared,ndm,type,iws,iws1,nel

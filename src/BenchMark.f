@@ -61,6 +61,7 @@ c$      mnt = omp_get_max_threads()
         do j = 2, mnt,2
           timei = 0.0d0
           do i = 1, nsample
+            call initDot(ia(i_b1),ia(i_b2),neq)
             timei = get_time() - timei
 c$omp parallel num_threads(j)
             d = dot_omp(ia(i_b1),ia(i_b2),neq)
@@ -79,6 +80,7 @@ c ... dot_ompL2
         do j = 2, mnt,2
           timei = 0.0d0
           do i = 1, nsample
+            call initDot(ia(i_b1),ia(i_b2),neq)
             timei = get_time() - timei
 c$omp parallel num_threads(j)
             d = dot_ompL2(ia(i_b1),ia(i_b2),neq)
@@ -97,6 +99,7 @@ c ... dot_ompL4
         do j = 2, mnt,2
           timei = 0.0d0
           do i = 1, nsample
+            call initDot(ia(i_b1),ia(i_b2),neq)
             timei = get_time() - timei
 c$omp parallel num_threads(j)
             d = dot_ompL4(ia(i_b1),ia(i_b2),neq)
@@ -115,6 +118,7 @@ c ... dot_ompL6
         do j = 2, mnt,2
           timei = 0.0d0
           do i = 1, nsample
+            call initDot(ia(i_b1),ia(i_b2),neq)
             timei = get_time() - timei
 c$omp parallel num_threads(j)
             d = dot_ompL6(ia(i_b1),ia(i_b2),neq)
@@ -133,6 +137,7 @@ c ... dot_ompL8
         do j = 2, mnt,2
           timei = 0.0d0
           do i = 1, nsample
+            call initDot(ia(i_b1),ia(i_b2),neq)
             timei = get_time() - timei
 c$omp parallel num_threads(j)
             d = dot_ompL8(ia(i_b1),ia(i_b2),neq)
@@ -151,6 +156,7 @@ c ... dot_ompO2
         do j = 2, mnt,2
           timei = 0.0d0
           do i = 1, nsample
+            call initDot(ia(i_b1),ia(i_b2),neq)
             timei = get_time() - timei
 c$omp parallel num_threads(j)
             d = dot_ompO2(ia(i_b1),ia(i_b2),neq)
@@ -169,6 +175,7 @@ c ... dot_ompO4
         do j = 2, mnt,2
           timei = 0.0d0
           do i = 1, nsample
+            call initDot(ia(i_b1),ia(i_b2),neq)
             timei = get_time() - timei
 c$omp parallel num_threads(j)
             d = dot_ompO4(ia(i_b1),ia(i_b2),neq)
@@ -187,6 +194,7 @@ c ... dot_ompO2L2
         do j = 2, mnt,2
           timei = 0.0d0
           do i = 1, nsample
+            call initDot(ia(i_b1),ia(i_b2),neq)
             timei = get_time() - timei
 c$omp parallel num_threads(j)
             d = dot_ompO2L2(ia(i_b1),ia(i_b2),neq)
@@ -252,11 +260,14 @@ c *********************************************************************
       real*8 dot,d
       integer*8 i_x,i_y,i_b 
 c ... alocando memoria
+      print*, '!MatVec benchamark!' 
+      return
       i_x   = alloc_8('benchx  ',             1,neq)
       i_y   = alloc_8('benchy  ',             1,neq)
 c .....................................................................
 c
 c ...
+
       call initMatVec(al,ad,au,ia(i_x),neq,nad,unsym)
 c .....................................................................
 c

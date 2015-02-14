@@ -503,7 +503,7 @@ c ... velocidade
                 cv  = specificMassA*wfn*meta(i)
               endif
             else
-                cv = 0.0d0
+              cv = 0.0d0
             endif
             p     = p - cv    
 c ... localmente parabolica

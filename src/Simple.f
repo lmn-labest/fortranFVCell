@@ -75,7 +75,9 @@ c * md       - usado para interpolacap simples das variaveis          *
 c * ddu      - campo d usado no simple                                *
 c * temp     - temperatura                                            *
 c * sx       - arronjo para guardar a solucao do sistemas lineares    *
-c * eddyVisc - arronjo para guardar a solucao do sistemas lineares    *
+c * eddyVisc - viscoside turbulenta                                   *
+c * cs       - coeficiente smagorinsk dinamico                        *
+c * yPlus    - distancia adiminensional a parede                      *
 c * numel  - numero de celula                                         *
 c * ndm    - numero de dimensoes                                      *
 c * nen    - numero de nos por celula                                 *
@@ -116,6 +118,7 @@ c *********************************************************************
      .                  ,pC        ,pC1       ,en            ,en0
      .                  ,rO        ,un        ,mdf           ,md
      .                  ,ddU       ,temp      ,sx            ,eddyVisc
+     .                  ,cs        ,yPlus     
      .                  ,numel     ,nnode     ,ndm      
      .                  ,nen       ,nshared   ,ndf           ,ndfE  
      .                  ,dt        ,t         ,matrizU1      ,matrizU2 
@@ -124,7 +127,8 @@ c *********************************************************************
      .                  ,nadPc     ,nadE      ,solverU1      ,solverU2 
      .                  ,solverPc  ,solverE   ,solvTolPcg    ,solvTolBcg
      .                  ,maxIt    ,noutSimple,itResSimplePlot,sEnergy   
-     .                  ,istep    ,cfl       ,reynalds       ,prandtl   
+     .                  ,istep    ,cfl       ,reynalds       ,kEnergy 
+     .                  ,prandtl  ,disfiltro ,transSubGrid
      .                  ,grashof  ,vol       ,unsymPc        ,bs
      .                  ,prename  ,noutCoo   ,flagTurbulence ,flagCoo)
 c...
@@ -133,11 +137,13 @@ c...
       include 'simple.fi'
       include 'openmp.fi'
       real(8)  x(*),e(*),sedge(*),sedgeE(*),w(ndm,*),w0(ndm,*)
-      real(8)  ro(*),temp(*),un(*),mdf(*),eddyVisc(*),wP(ndm,*)
+      real(8)  ro(*),temp(*),un(*),mdf(*),wP(ndm,*)
       integer ix(*),nelcon(*),ie(*),pedge(*),pedgeE(*),num(*),ls(*)
       integer md(*)
       logical unsymPc
       logical bs
+c ... turbulencia 
+      real*8 eddyVisc(*),cs(*),yPlus(*)
 c ...
       character*80 prename
 c ... gradientes
@@ -167,8 +173,10 @@ c ...
       integer noutSimple,noutCoo
       logical itResSimplePLot,solvU1,solvU2,solvE,flagCoo
       logical ResAbs,sEnergy,xMomentum,yMomentum,flagTurbulence
+      integer i
 c ... variaveis
-      real(8) cfl,reynalds,prandtl,grashof,vol
+      real(8) cfl,reynalds,prandtl,grashof,vol,kEnergy
+      real(8) disfiltro,transSubGrid
       real(8) ZERO,kZero
       parameter (ZERO=1.0d-32)
 c ...
@@ -176,7 +184,7 @@ c ...
       ResAbs        = .false.
 c ... tecnica de interpolação de velocidade nas faces (checkerboard problem) 
       intVel        = 5
-c ... interpolacao da pressao nas feces de segunda ordem (momentum)    
+c ... interpolacao da pressao nas faces de segunda ordem (momentum)    
       sPressure     = .true.
 c .....................................................................
 c
@@ -201,12 +209,15 @@ c      open(19, file= 'matriz2.txt')
 c .....................................................................
 c
 c ... calculo de parametro por celula
-      call cellParameter(mP   ,rO     ,w      ,x  ,eddyVisc
+      call cellParameter(mP      ,rO     ,w      ,x  ,eddyVisc
+     .                  ,gradU1  ,gradU2
      .                  ,e       ,sedge  ,pedge  ,ie ,nelcon
      .                  ,ix      ,numel  ,ndm    ,nen,nshared 
      .                  ,ndf     ,dt     ,      7,  1)
-      call calParameter(mP,div,numel,cfl,reynalds,prandtl,grashof
-     .                 ,vol,Massa,fluxoM,dt,tDinamico)
+      call calParameter(mP     ,div       ,numel         ,cfl ,reynalds
+     .                 ,kEnergy,disfiltro,transSubGrid
+     .                 ,prandtl,grashof  ,vol   ,Massa   ,fluxoM
+     .                 ,dt     ,tDinamico)
 c .....................................................................
 c
 c ...
@@ -315,10 +326,13 @@ c .....................................................................
 c
 c ...   
         if(flagTurbulence) then
-          call turbulenceLes(p    ,w  ,gradU1,gradU2 , x   ,eddyVisc
-     .                      ,sedge,e  ,    ie, nelcon,pedge,ix
+          turbLes = get_time() - turbLes 
+          call turbulenceLes(w  ,gradU1,gradU2  , x   ,eddyVisc
+     .                      ,cs ,yPlus                               
+     .                      ,sedge,e  ,     ie, nelcon ,pedge ,ix
      .                      ,numel,ndm,   nen,nshared,ndf
      .                      ,nshared,8,0,1)
+          turbLes = get_time() - turbLes 
         endif
 c .....................................................................
 c ... SIMPLER 
@@ -762,6 +776,17 @@ c
 c ...
   300 continue
 c ...
+c     if(sEnergy) then  
+c       if(conv .ne. 4) then
+c         print*,"Simple nao convergiu!!"
+c         stop
+c       endif
+c     else
+c       if(conv .ne. 3) then
+c         print*,"Simple nao convergiu!!"
+c         stop
+c       endif
+c     endif 
       write(*,'(1x,a,i5)')    'it simple',itSimple
       write(*,'(1x,a,es20.8)')'residuo da conservacao de massa:'
      .                       ,rPc
@@ -777,11 +802,14 @@ c .....................................................................
 c
 c ... calculo de parametro por celula
       call cellParameter(mP   ,rO     ,w      ,x  ,eddyVisc
+     .                  ,gradU1  ,gradU2
      .                  ,e       ,sedge  ,pedge  ,ie ,nelcon
      .                  ,ix      ,numel  ,ndm    ,nen,nshared 
      .                  ,ndf     ,dt     ,      7,  1)
-      call calParameter(mP,div,numel,cfl,reynalds,prandtl,grashof
-     .                 ,vol,Massa,fluxoM,dt,tDinamico)
+      call calParameter(mP     ,div       ,numel         ,cfl ,reynalds
+     .                 ,kEnergy,disfiltro,transSubGrid
+     .                 ,prandtl,grashof  ,vol   ,Massa   ,fluxoM
+     .                 ,dt     ,tDinamico)
 c .....................................................................
 c
 c ...
@@ -998,6 +1026,9 @@ c *            6 - grahosf local                                      *
 c *            7 - massa do volume                                    * 
 c *            8 - fluxo de massa entrando no dominio                 * 
 c *            9 - fluxo de massa saindo do dominio                   * 
+c *           10 - energia cinetica total                             * 
+c *           11 - dissipacao de energia resolvivel                   * 
+c *           12 - transferencia de energia resolvivel para o sub grid* 
 c * numel - numero de elementos                                       *
 c * massa - indefinido                                                *
 c * fM    - indefinido                                                *
@@ -1006,39 +1037,57 @@ c * dt    - intervalo de tempo                                        *
 c * ----------------------------------------------------------------- *
 c * parametros de saida                                               *
 c * ----------------------------------------------------------------- *
-c * vol   - volume total do dominio                                   *
-c * dt    - intervalo de tempo                                        *
+c * cfl          - numero de courant                                  *
+c * re           - numero de reynalds                                 *
+c * kEnrgy       - energia cinetica total                             *
+c * disfiltro    - dissipaco de energia resolvivel pelas tensoes      *
+c * viscosas                                                          *   
+c * transSubGrid - tranferencia de enrgia para o subgrid              *
+c * pr           - Prandtl number                                     *
+c * gr           - Grashof number                                     *        
+c * vol          - volume total do dominio                            *
+c * massa        - massa total do dominio                             *
+c * fm           - fluxo de massa atraves do domino aberto            *
+c * dt           - intervalo de tempo                                 *
 c * ----------------------------------------------------------------- *
 c *********************************************************************
-      subroutine calParameter(mP,div,numel,cfl,re,pr,gr,vol,massa,fM,dt
+      subroutine calParameter(mP       ,div          ,numel,cfl,re
+     .                       ,kEnergy  ,disfiltro    ,transSubGrid
+     .                       ,pr       ,gr           ,vol 
+     .                       ,massa   ,fM            ,dt
      .                       ,deltaDinamico)
       implicit none
-      real(8) mP(9,numel),div(*),vol,dt,dtm,dtm1,cfl,re,pr,gr
+      real(8) mP(20,numel),div(*),vol,dt,dtm,dtm1
+      real(8) cfl,re,kEnergy,disfiltro,transSubGrid
+      real(8) pr,gr
       real(8) massa,fM,massInput,massOut
       logical deltaDinamico
       integer numel
       integer i
 c ...
-      vol       = mP(3,1)
-      re        = mP(2,1)
-      cfl       = mP(1,1)
-      pr        = mP(5,1)
-      gr        = mP(6,1)
-      massa     = mP(7,1)
-      massInput = mP(8,1)
-      massOut   = mP(9,1)
+      cfl          =  mP(1,1)
+      re           =  mP(2,1)
+      vol          =  mP(3,1)
+      pr           =  mP(5,1)
+      gr           =  mP(6,1)
+      massa        =  mP(7,1)
+      massInput    =  mP(8,1)
+      massOut      =  mP(9,1)
+      kEnergy      = mP(10,1)
+      disfiltro    = mP(11,1)
+      transSubGrid = mP(12,1)
       dtm  = min(dt,0.9d0*(dsqrt(mP(3,1))/mP(4,1)))
       dtm1  = min(dt,dabs(1/div(1)))
 c .....................................................................
 c
 c ...      
       do i = 2, numel
-c ... volume da dominio
-        vol        = vol + mP(3,i)
-c ... reynalds maximo da malha
-        re         = max(mP(2,i),re)
 c ... cfl maximo da malha
         cfl        = max(mP(1,i),cfl)
+c ... reynalds maximo da malha
+        re         = max(mP(2,i),re)
+c ... volume da dominio
+        vol        = vol + mP(3,i)
 c ... prandlt maximo da malha
         pr         = max(mP(5,i),pr)
 c ... grasholf maximo da malha
@@ -1047,8 +1096,14 @@ c ... massa total
         massa      = massa + mP(7,i)
 c ... massa total input
         massInput  = massInput + mP(8,i)
-c ... massa total
+c ... massa total output
         massOut    = massOut   + mP(9,i)
+c ...            
+        kEnergy    = kEnergy   + mP(10,i)
+c ...            
+        disfiltro    = disfiltro    + mP(11,i)
+c ...
+        transSubGrid = transSubGrid + mP(12,i)
 c ... deltaT que satisfaca o cfl
         dtm    = min(dtm,0.9d0*(dsqrt(mP(3,i))/mP(4,i)))
 c ... continuidade
@@ -1065,8 +1120,11 @@ c ...
 c .....................................................................
 c
 c ...
+      kEnergy      = kEnergy/(massa)
+      disfiltro    = disfiltro/vol
+      transSubGrid = transSubGrid/vol
+c ...
       fM = massInput + massOut
-c      print*,massa/vol
 c .....................................................................
       return
       end

@@ -655,6 +655,8 @@ c *  mP    - paramentros por celula (cfl, Reynalds, peclet)           *
 c *  rO    - massa especifica da celula(pi+1,pt)                      *   
 c *  x     - coordenadas nodais                                       *
 c * eddyVis- viscosidade trubulenta                                   *
+c * gradU1 - gradiente de u1                                          *
+c * gradU2 - gradiente de u2                                          *
 c *  e     - propriedade                                              *
 c * pedge  - arestas com condicao de contorno                         *
 c * sedge -  condicao de contorno nas arestas                         *
@@ -678,6 +680,7 @@ c * OBS: (cfl,Reynalds,volume,vm) lib 1                               *
 c * OBS:                 para lib 2                                   *
 c *********************************************************************
       subroutine cellParameter(mP      ,rO     ,w      ,x  ,eddyVisc
+     .                        ,gradU1  ,gradU2
      .                        ,e       ,sedge  ,pedge  ,ie ,nelcon
      .                        ,ix      ,numel  ,ndm    ,nen,nshared 
      .                        ,nst     ,dt     ,iws    ,lib)
@@ -685,15 +688,17 @@ c *********************************************************************
       include 'openmp.fi'
       integer numel,nen,ndm,nshared
       integer nel,i,ii,j,jj,k,kk
-      real*8 w(ndm,*),mP(9,*),sedge(nst,nshared+1,numel)
+      real*8 w(ndm,*),mP(20,*),sedge(nst,nshared+1,numel)
       real*8 x(ndm,*),e(10,*),dt,rO(3,*),eddyVisc(*)
+      real*8  gradU1(ndm,*),gradU2(ndm,*)
       integer nelcon(nshared,*),pedge(nshared+1,numel)
       integer ix(nshared+1,numel),ie(*)
 c ... variaveis locais por elemento      
       real*8 lx(168),le(10,9)
       real*8 lw(21),lsedge(28)
-c ... variaveis locai
-      real*8 lRo(3,7),lmP(9),lEddyVisc(7)
+c ... variaveis locais
+      real*8 lRo(3,7),lmP(20),lEddyVisc(7)
+      real*8 lgrad1(21),lgrad2(21)
       integer lviz(7),lpedge(7)
 c ...
       integer idCell
@@ -707,18 +712,19 @@ c .....................................................................
 c ... openmp
       idCell = nshared + 1
       if(openmpCell)Then
+c     if(.false.)Then
 c$omp parallel private(nel,i,ii,j,jj,k,kk,vizNel,no,ma,type)
-c$omp.private(lx,le,lw,lRo,lmP,lviz,lpedge,lsedge,ddum,idum,ldum)
+c$omp.private(lx,le,lw,lsedge,lRo,lmP,lEddyVisc,lgrad1,lgrad2)
+c$omp.private(lviz,lpedge)
+c$omp.private(ddum,idum,ldum)
 c$omp.shared(numel,nen,ndm,nst,nshared)
-c$omp.shared(w,mP,x,eddyVisc,e,dt,Ro,sedge,nelcon,pedge,ix,ie) 
+c$omp.shared(w,mP,x,eddyVisc,e,dt,Ro,sedge,nelcon,pedge)
+c$omp.shared(gradU1,gradU2,ix,ie) 
 c$omp.num_threads(nThreadsCell)
 c$omp do
 c ... zerando os arranjos locais
         do nel = 1, numel
-          lmP(1)= 0.0d0
-          lmP(2)= 0.0d0
-          lmP(3)= 0.0d0
-          lmP(4)= 0.0d0
+          lmP(1:20)= 0.0d0
           do i = 1, nshared+1
             lrO(1,i)  = 0.0d0
             lrO(2,i)  = 0.0d0
@@ -744,7 +750,7 @@ c ... loop da celula central
               ii      = (i-1)*nst + k  
               lsedge(ii) = sedge(k,i,nel)
             enddo
-            lpedge(i)     = pedge(i,nel)
+            lpedge(i)    = pedge(i,nel)
           enddo
 c ......................................................................
 c
@@ -755,115 +761,8 @@ c ...
           do k = 1, ndm
             ii         = nshared*ndm + k
             lw(ii)     =     w(k,nel)
-          enddo       
-c .....................................................................
-c
-c ...
-          do i = 1, nen
-            no        = ix(i,nel)
-            ii = nshared*nen*ndm 
-            do k = 1, ndm
-              jj     = ii + (i-1)*ndm + k
-              lx(jj) = x(k,no)
-            enddo
-          enddo
-c .....................................................................
-c
-c ... loop na aresta        
-          do j = 1 , nshared
-            viznel    = nelcon(j,nel)
-            lviz(j)   = viznel 
-            if( viznel .gt. 0) then
-              lEddyVisc(j)      = eddyVisc(vizNel) 
-              lrO(1,j)          = rO(1,viznel)
-              lrO(2,j)          = rO(2,viznel)
-                    ma          = ix(nen+1,viznel)
-              do kk = 1, 10
-                le(kk,j) = e(kk,ma)
-              enddo  
-              do k = 1, ndm
-                ii          = (j-1)*ndm + k
-                lw(ii)      =    w(k,vizNel)
-              enddo
-c ... loop nos vertices do elemento vizinho          
-              do i = 1, nen
-                no = ix(i,vizNel)
-                ii = (j-1)*nen*ndm
-                do k = 1, ndm
-                  jj     = ii + (i-1)*ndm + k
-                  lx(jj) = x(k,no)
-                enddo
-              enddo  
-            endif  
-          enddo
-          ma            = ix(nen+1,nel)
-          type = ie(ma)
-          do i = 1, 10
-            le(i,nshared+1) = e(i,ma)
-          enddo
-c ...
-          call celllib(ddum   ,lx     ,ddum   ,ddum     ,ddum
-     .                ,ddum   ,lRo    ,ddum   ,ddum     ,ddum  
-     .                ,ddum   ,ddum   ,ddum   ,lw       ,ddum  
-     .                ,le     ,ddum   ,ddum   ,lsedge   ,lpedge
-     .                ,lviz   ,ddum   ,nen    ,nshared  ,ndm   
-     .                ,type   ,iws    ,idum   ,lib      ,nel   
-     .                ,dt     ,ddum   ,lmP    ,lEddyVisc,ldum)
-c .....................................................................
-c
-c ...
-          do i = 1, 9
-            Mp(i,nel) = lmP(i)
-          enddo
-c .................................................................
-        enddo
-c$omp end parallel
-c .....................................................................
-c
-c ... sequencial
-      else
-c ... zerando os arranjos locais
-        do nel = 1, numel
-          lmP(1)= 0.0d0
-          lmP(2)= 0.0d0
-          lmP(3)= 0.0d0
-          lmP(4)= 0.0d0
-          do i = 1, nshared+1
-            lrO(1,i)  = 0.0d0
-            lrO(2,i)  = 0.0d0
-            lrO(3,i)  = 0.0d0
-            do k = 1,ndm
-              ii         = (i-1)*ndm + k
-              lw(ii)     = 0.d0 
-            enddo
-            do j = 1, nen
-              ii = (i-1)*nen*ndm
-              do k = 1, ndm
-                jj = ii + (j-1)*ndm + k
-                lx(jj) = 0.d0
-              enddo
-            enddo 
-          enddo
-c .....................................................................        
-c
-c ... loop da celula central
-          lEddyVisc(idCell) = eddyVisc(nel) 
-          do i = 1, nshared + 1 
-            do k = 1, nst
-              ii      = (i-1)*nst + k  
-              lsedge(ii) = sedge(k,i,nel)
-            enddo
-            lpedge(i)     = pedge(i,nel)
-          enddo
-c ......................................................................
-c
-c ...
-          lrO(1,nshared+1)  = rO(1,nel)
-          lrO(2,nshared+1)  = rO(2,nel)
-          lrO(3,nshared+1)  = rO(3,nel)
-          do k = 1, ndm
-            ii         = nshared*ndm + k
-            lw(ii)     =     w(k,nel)
+            lgrad1(ii) = gradU1(k,nel)
+            lgrad2(ii) = gradU2(k,nel)
           enddo       
 c .....................................................................
 c
@@ -912,7 +811,7 @@ c ... loop nos vertices do elemento vizinho
           enddo
 c ...
           call celllib(ddum   ,lx     ,ddum   ,ddum     ,ddum
-     .                ,ddum   ,lRo    ,ddum   ,ddum     ,ddum  
+     .                ,ddum   ,lRo    ,lgrad1 ,lgrad2   ,ddum  
      .                ,ddum   ,ddum   ,ddum   ,lw       ,ddum  
      .                ,le     ,ddum   ,ddum   ,lsedge   ,lpedge
      .                ,lviz   ,ddum   ,nen    ,nshared  ,ndm   
@@ -921,15 +820,117 @@ c ...
 c .....................................................................
 c
 c ...
-          mP(1,nel) = lmP(1)
-          mP(2,nel) = lmP(2)
-          mP(3,nel) = lmP(3)
-          mP(4,nel) = lmP(4)
-          mP(5,nel) = lmP(5)
-          mP(6,nel) = lmP(6)
-          mP(7,nel) = lmP(7)
-          mP(8,nel) = lmP(8)
-          mP(9,nel) = lmP(9)
+          do i = 1, 20
+            Mp(i,nel) = lmP(i)
+          enddo
+c .................................................................
+        enddo
+c$omp end parallel
+c .....................................................................
+c
+c ... sequencial
+      else
+c ... zerando os arranjos locais
+        do nel = 1, numel
+          lmP(1:20)= 0.0d0
+          do i = 1, nshared+1
+            lrO(1,i)  = 0.0d0
+            lrO(2,i)  = 0.0d0
+            lrO(3,i)  = 0.0d0
+            do k = 1,ndm
+              ii         = (i-1)*ndm + k
+              lw(ii)     = 0.d0 
+            enddo
+            do j = 1, nen
+              ii = (i-1)*nen*ndm
+              do k = 1, ndm
+                jj = ii + (j-1)*ndm + k
+                lx(jj) = 0.d0
+              enddo
+            enddo 
+          enddo
+c .....................................................................        
+c
+c ... loop da celula central
+          lEddyVisc(idCell) = eddyVisc(nel) 
+          do i = 1, nshared + 1 
+            do k = 1, nst
+              ii      = (i-1)*nst + k  
+              lsedge(ii) = sedge(k,i,nel)
+            enddo
+            lpedge(i)    = pedge(i,nel)
+          enddo
+c ......................................................................
+c
+c ...
+          lrO(1,nshared+1)  = rO(1,nel)
+          lrO(2,nshared+1)  = rO(2,nel)
+          lrO(3,nshared+1)  = rO(3,nel)
+          do k = 1, ndm
+            ii         = nshared*ndm + k
+            lw(ii)     =     w(k,nel)
+            lgrad1(ii) = gradU1(k,nel)
+            lgrad2(ii) = gradU2(k,nel)
+          enddo       
+c .....................................................................
+c
+c ...
+          do i = 1, nen
+            no        = ix(i,nel)
+            ii = nshared*nen*ndm 
+            do k = 1, ndm
+              jj     = ii + (i-1)*ndm + k
+              lx(jj) = x(k,no)
+            enddo
+          enddo
+c .....................................................................
+c
+c ... loop na aresta        
+          do j = 1 , nshared
+            viznel    = nelcon(j,nel)
+            lviz(j)   = viznel 
+            if( viznel .gt. 0) then
+              lEddyVisc(j)  = eddyVisc(vizNel) 
+              lrO(1,j)     = rO(1,viznel)
+              lrO(2,j)     = rO(2,viznel)
+                     ma    = ix(nen+1,viznel)
+              do kk = 1, 10
+                le(kk,j) = e(kk,ma)
+              enddo  
+              do k = 1, ndm
+                ii          = (j-1)*ndm + k
+                lw(ii)      =    w(k,vizNel)
+              enddo
+c ... loop nos vertices do elemento vizinho          
+              do i = 1, nen
+                no = ix(i,vizNel)
+                ii = (j-1)*nen*ndm
+                do k = 1, ndm
+                  jj     = ii + (i-1)*ndm + k
+                  lx(jj) = x(k,no)
+                enddo
+              enddo  
+            endif  
+          enddo
+          ma            = ix(nen+1,nel)
+          type = ie(ma)
+          do i = 1, 10
+            le(i,nshared+1) = e(i,ma)
+          enddo
+c ...
+          call celllib(ddum   ,lx     ,ddum   ,ddum     ,ddum
+     .                ,ddum   ,lRo    ,lgrad1 ,lgrad2   ,ddum  
+     .                ,ddum   ,ddum   ,ddum   ,lw       ,ddum  
+     .                ,le     ,ddum   ,ddum   ,lsedge   ,lpedge
+     .                ,lviz   ,ddum   ,nen    ,nshared  ,ndm   
+     .                ,type   ,iws    ,idum   ,lib      ,nel   
+     .                ,dt     ,ddum   ,lmP    ,lEddyVisc,ldum)
+c .....................................................................
+c
+c ...
+          do i = 1, 20
+            Mp(i,nel) = lmP(i)
+          enddo
 c .................................................................
         enddo
       endif
@@ -1684,7 +1685,7 @@ c .....................................................................
 c **********************************************************************
 c
 c **********************************************************************
-c * TFOMR : calcula do flux apartir do gradiente                       *
+c * TFORM : calcula do flux apartir do gradiente                       *
 c * ----------------------------------------------------------------- *
 c * Parametros de entrada :                                           *
 c * ----------------------------------------------------------------- *
@@ -1837,11 +1838,13 @@ c * TURBULENCELES :modelo de turbulence LES                           *
 c * ----------------------------------------------------------------- *
 c * Parametros de entrada :                                           *
 c * ----------------------------------------------------------------- *
-c *  p      - campo de pressao                                        *
 c *  w      - campo de velociade                                      *
 c *  gradU1 - gradiente do campo de velocidade u1                     *
 c *  gradU2 - gradiente do campo de velocidade u2                     *
 c *  x      - coordenadas nodais                                      *
+c * eddyVisc- viscoside turbulenta                                    *
+c * cs      - coeficiente smagorinsk dinamico                         *
+c * yPlus    - distancia adiminensional a parede                      *
 c * sedge   - condicoes de contorno nas arestas                       *
 c *  e      - propriedade                                             *
 c *  ie     - tipo do elemento do material                            *
@@ -1856,19 +1859,23 @@ c * ndf     - graus de liberdade                                      *
 c * ----------------------------------------------------------------- *
 c * Parametros de saida :                                             *
 c * ----------------------------------------------------------------- *
-c *  grad  - gradiente nas celulas                                    *
+c * eddyVisc- viscoside turbulenta                                    *
+c * cs      - coeficiente smagorinsk dinamico                         *
 c * ----------------------------------------------------------------- *
 c *********************************************************************
-      subroutine turbulenceLes(p,w,gradU1,gradU2,x,eddyVisc
+      subroutine turbulenceLes(w,gradU1,gradU2,x,eddyVisc
+     .                        ,cs,yPlus                          
      .                        ,sedge,e,ie,nelcon,pedge,ix
      .                        ,numel,ndm,nen,nshared,ndf
      .                        ,nst,iws,iws1,lib)  
       implicit none
       include 'openmp.fi'
       integer numel,nen,ndm,ndf,nst,nshared
-      real*8 p(*),gradU1(ndm,*),gradU2(ndm,*),dum
+      real*8 gradU1(ndm,*),gradU2(ndm,*)
+      real*8 ddum
       real*8 sedge(nst,nshared+1,*),e(10,*)
-      real*8 x(ndm,*),w(ndm,*),eddyVisc(*)
+      real*8 x(ndm,*),w(ndm,*)
+      real*8 eddyVisc(*),cs(*),yPlus(*)
       integer nelcon(nshared,*),pedge(nshared+1,*),ix(nshared+1,*),ie(*)
       integer type,iws,iws1,lib,idCell
 c ... variaveis locais por elemento      
@@ -1877,8 +1884,7 @@ c ... variaveis locais por elemento
       real*8  lsedge(28) !(max 4 * 7)
       real*8  lx(168)    !(max 3 * 8 * 7)
       real*8  lw(21)     !(max 3 * 7)
-      real*8  lp(7)
-      real*8  leddyVisc(7)
+      real*8  leddyVisc(7),lCs(7),lyPlus    
 c ... variaveis locais      
       integer nel,i,ii,j,jj,k,kk
       integer viznel,no,ma
@@ -1889,14 +1895,17 @@ c ... openmp
       if(openmpCell) then
 c ... loop nas celulas
 c$omp parallel private(nel,i,ii,j,jj,k,vizNel,no,ma,type)
-c$omp.private(lviz,lpedge,lgradU1,lgradU2,le,lsedge,lx,lw,lp,leddyVisc)
+c$omp.private(lviz,lpedge)
+c$omp.private(lgradU1,lgradU2,le,lsedge,lx,lw)
+c$omp.private(leddyVisc,lCs,lyPlus)
 c$omp.shared(numel,nen,ndm,ndf,nst,nshared,lib,iws,iws1)
-c$omp.shared(p,w,gradU1,gradU2,dum,sedge,e,x,nelcon,pedge,ix,ie) 
-c$omp.num_threads(nThreadsCell)
+c$omp.shared(w,gradU1,gradU2,x,eddyVisc,cs,yPlus,ddum)
+c$omp.shared(sedge,e,nelcon,pedge,ix,ie) 
+c$omp.num_threads(num_threads)
 c$omp do
         do nel = 1, numel
 c ... loop da celula central
-          lp(idCell) = p(nel)
+          lCs(idCell) = cs(nel)
           do k = 1, ndm
             ii         = nshared*ndm + k
             lw(ii)     =     w(k,nel)   
@@ -1922,7 +1931,7 @@ c ... loop na aresta
             viznel = nelcon(j,nel)
             lviz(j)= viznel
             if( viznel .gt. 0) then
-              lp(j)   =  p(viznel)
+              lCs(j)  = cs(viznel)
               ma = ix(nen+1,viznel)
               do kk = 1, 10
                 le(kk,j) = e(kk,ma)
@@ -1950,16 +1959,17 @@ c ... loop nos vertices do elemento vizinho
           enddo  
           type = ie(ma)
 c ...
-         call celllib(dum    ,lx     ,dum    ,lp       ,dum 
-     .               ,dum    ,dum    ,lgradU1,lgradU2  ,dum   
-     .               ,dum    ,dum    ,dum    ,lw       ,dum
-     .               ,le     ,dum    ,dum    ,lsedge   ,lpedge
-     .               ,lviz   ,dum    ,nen    ,nshared  ,ndm   
+         call celllib(ddum   ,lx     ,ddum   ,ddum     ,lyPlus
+     .               ,lCs    ,ddum   ,lgradU1,lgradU2  ,ddum   
+     .               ,ddum   ,ddum   ,ddum   ,lw       ,ddum
+     .               ,le     ,ddum   ,ddum   ,lsedge   ,lpedge
+     .               ,lviz   ,ddum   ,nen    ,nshared  ,ndm   
      .               ,type   ,iws    ,iws1   ,lib      ,nel 
-     .               ,dum    ,dum    ,dum    ,leddyVisc,.false.)
+     .               ,ddum   ,ddum   ,ddum   ,leddyVisc,.false.)
 c .....................................................................
            eddyVisc(nel) = leddyVisc(idCell)
-           p(nel)        =        lp(idCell)  
+                cs(nel)  = lCs(idCell)
+             yPlus(nel)  = lyPlus          
         enddo
 c$omp enddo
 c$omp end parallel
@@ -1969,7 +1979,7 @@ c ... sequencial
       else
         do nel = 1, numel
 c ... loop da celula central
-          lp(idCell) = p(nel)
+          lCs(idCell) = cs(nel)
           do k = 1, ndm
             ii         = nshared*ndm + k
             lw(ii)     =     w(k,nel)   
@@ -1995,7 +2005,7 @@ c ... loop na aresta
             viznel = nelcon(j,nel)
             lviz(j)= viznel
             if( viznel .gt. 0) then
-              lp(j)   =  p(viznel)
+              lCs(j)  = cs(viznel)
               ma = ix(nen+1,viznel)
               do kk = 1, 10
                 le(kk,j) = e(kk,ma)
@@ -2023,18 +2033,62 @@ c ... loop nos vertices do elemento vizinho
           enddo  
           type = ie(ma)
 c ...
-         call celllib(dum    ,lx     ,dum    ,lp       ,dum 
-     .               ,dum    ,dum    ,lgradU1,lgradU2  ,dum   
-     .               ,dum    ,dum    ,dum    ,lw       ,dum
-     .               ,le     ,dum    ,dum    ,lsedge   ,lpedge
-     .               ,lviz   ,dum    ,nen    ,nshared  ,ndm   
+         call celllib(ddum   ,lx     ,ddum   ,ddum     ,lyPlus
+     .               ,lCs    ,ddum   ,lgradU1,lgradU2  ,ddum   
+     .               ,ddum   ,ddum   ,ddum   ,lw       ,ddum
+     .               ,le     ,ddum   ,ddum   ,lsedge   ,lpedge
+     .               ,lviz   ,ddum   ,nen    ,nshared  ,ndm   
      .               ,type   ,iws    ,iws1   ,lib      ,nel 
-     .               ,dum    ,dum    ,dum    ,leddyVisc,.false.)
+     .               ,ddum   ,ddum   ,ddum   ,leddyVisc,.false.)
 c .....................................................................
            eddyVisc(nel) = leddyVisc(idCell)
-           p(nel)        =        lp(idCell)  
+                 cs(nel) = lCs(idCell)  
+             yPlus(nel)  = lyPlus        
         enddo
 c .....................................................................
+      endif
+      return
+      end
+c *********************************************************************
+c
+c *********************************************************************
+c * menVel : Media temporal das velocidades                           *
+c * ----------------------------------------------------------------- *
+c * parametros de entrada :                                           *
+c * ----------------------------------------------------------------- *
+c * wMean - nao definido                                              *
+c * w     - velocidade instantanea                                    *
+c * numel - numero de elementos                                       *
+c * ndm   - numero de dimensoes                                       *
+c * t     - tempo total                                               *
+c * dt    - delta temporal                                            *
+c * fend  - true - finaliza a media                                   *
+c *         false- calcula a integral temporal                        *
+c * ----------------------------------------------------------------- *
+c * parametros de saida                                               *
+c * ----------------------------------------------------------------- *
+c * wMean - media temporal das velocidade     (fend = .true.)         *
+c * wMean - integral temporal das velocidades (fend = .false.)        *
+c * ----------------------------------------------------------------- *
+c *********************************************************************
+      subroutine meanVel(wMean,w,numel,ndm,t,dt,fend)
+      implicit none
+      real(8) w(ndm,*),wMean(ndm,*),dt,t
+      integer ndm,numel
+      integer i,j
+      logical fend
+      if(fend) then
+        do i = 1, numel
+          do j = 1, ndm
+            wMean(j,i) = wMean(j,i)/t
+          enddo
+        enddo
+      else
+        do i = 1, numel
+          do j = 1, ndm
+            wMean(j,i) = wMean(j,i) + w(j,i)*dt
+          enddo
+        enddo
       endif
       return
       end

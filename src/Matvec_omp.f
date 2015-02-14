@@ -803,6 +803,7 @@ c$omp end single
       return
       end
 c **********************************************************************
+c
 c *********************************************************************
 c * MATVEC_CSRD_SYM_OLI2_ILU4_OMP: produto matriz-vetor               *
 c *                   y = Ax (A simetrica)                            *
@@ -1043,6 +1044,9 @@ c ......................................................................
 c$omp single          
       matvectime = get_time() - matvectime
 c$omp end single
+c .....................................................................
+c
+c ...
       if( nl(1) .eq. 3 ) then
 c$omp do private(i,t1,t2,t3,t4)
         do i = 1, neq
@@ -1052,6 +1056,11 @@ c$omp do private(i,t1,t2,t3,t4)
           t3   =  a(3,i)*x(ja(3,i))
           y(i) = t1 + t2 + t3 + t4 
         enddo 
+c$omp enddo
+c
+c .....................................................................
+c
+c ...
       elseif(nl(1) .eq. 4 ) then         
 c$omp do private(i,t1,t2,t3,t4,t5)
         do i = 1, neq
@@ -1063,10 +1072,16 @@ c$omp do private(i,t1,t2,t3,t4,t5)
           y(i) = t1 + t2 + t3 + t4 + t5
         enddo
 c$omp enddo
+c
+c .....................................................................
       endif
+c .....................................................................
+c
+c ....
 c$omp single          
       matvectime = get_time() - matvectime
 c$omp end single
+c .....................................................................
       return
       end
 c **********************************************************************
@@ -1090,7 +1105,7 @@ c$omp single
 c$omp end single
 c ......................................................................
 c
-c$omp do reduction(+:omp_dot1)     
+c$omp do reduction(+:omp_dot1) 
       do i = 1, n
          omp_dot1 = omp_dot1 + a(i)*b(i)
       enddo

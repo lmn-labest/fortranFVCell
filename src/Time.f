@@ -61,6 +61,7 @@ c ... Tempo
       write(ntime,10) 'POSVEL    : ',posVelocityTime
       write(ntime,10) 'UPSIMPLE  : ',simpleUpdateTime
       write(ntime,10) 'GFORMP    : ',grSimpleTime
+      write(ntime,10) 'TURBLES   : ',turbLes         
 c .....................................................................
 c
 c ... Informacao do sistem linear

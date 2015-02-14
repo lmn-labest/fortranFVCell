@@ -266,9 +266,9 @@ c ======================================================================
      . 5x,'Number of iterations = ',i20/
      . 5x,'Energy norm          = ',d20.10/
      . 5x,'CPU time (s)         = ',f20.2/)
- 1150 format(5x,'Number of iterations = ',i20/
-     .       5x,'Energy norm          = ',d20.10/
-     .       5x,'CPU time (s)         = ',f20.2/)
+c1150 format(5x,'Number of iterations = ',i20/
+c    .       5x,'Energy norm          = ',d20.10/
+c    .       5x,'CPU time (s)         = ',f20.2/)
  1200 format(' *** WARNING: BiPCGSTAB OMP no convergence reached after '
      .      ,i9,' iterations !',d20.6,' Res ',d20.6,' Conv'/)
       end    

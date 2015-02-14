@@ -5,7 +5,7 @@
 c ... simple
       real*8  solvU1Time,solvU2Time,solvPctime,solvEtime,grSimpleTime
       real*8  elmU1Time,elmU2Time,elmPcTime,elmEtime,simpleTime
-      real*8  simpleUpdateTime,simpleItTime
+      real*8  simpleUpdateTime,simpleItTime,turbLes
 c ......................................................................            
       common /timectrl/ solvTime,elmTime,vecTime,dsTime,numeqTime,
      .              reordtime,totaltime,matvectime,dottime,
@@ -14,4 +14,4 @@ c ... simple
       common /timeSimple/ solvU1Time,solvU2Time,solvPctime,grSimpleTime,
      .                elmU1Time,elmU2Time,elmPcTime,elmEtime,simpleTime,
      .                solvEtime,posVelocityTime,simpleUpdateTime,
-     .                simpleItTime
+     .                simpleItTime,turbLes

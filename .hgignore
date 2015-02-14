@@ -4,6 +4,7 @@ syntax: glob
 src/*.o
 src/*.mod
 lib/*.a
+*.vtk
 bin/*.vtk
 bin/*.dat
 bin/*.txt

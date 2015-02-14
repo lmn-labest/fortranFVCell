@@ -69,15 +69,20 @@ def main(argv):
 #parede superior
   nElm0 = (nl-1)*(nh-1) - (nl -2)
   f.write("%9d %2d %2d %2d %2d %2d\n"%(nElm0,0,0,1,2,0))
-  for i in range(1,nl-2):
-    f.write("%9d %2d %2d %2d %2d %2d\n"%(nElm0+i,0,0,1,0,0))
-  f.write("%9d %2d %2d %2d %2d %2d\n"%((nl-1)*(nh-1),0,3,1,0,0))
+# for i in range(1,nl-2):
+#   f.write("%9d %2d %2d %2d %2d %2d\n"%(nElm0+i,0,0,1,0,0))
+# f.write("%9d %2d %2d %2d %2d %2d\n"%((nl-1)*(nh-1),0,3,1,0,0))
+  f.write("%9d %2d %2d %2d %2d %2d\n"%((nl-1)*(nh-1),0,3,0,0,0))
 
 #parede esquerda
-  for i in range(1,nh-2):
+#  for i in range(1,(nh-2)/10):
+#    f.write("%9d %2d %2d %2d %2d %2d\n"%(i*(nl-1)+1,0,0,0,2,0))
+  for i in range(1,nh):
     f.write("%9d %2d %2d %2d %2d %2d\n"%(i*(nl-1)+1,0,0,0,2,0))
 
 #parede direita 
+#  for i in range(nh-2-(nh-2)/10,nh-2):
+#    f.write("%9d %2d %2d %2d %2d %2d\n"%(nl+i*(nl-1)-1,0,3,0,0,0))
   for i in range(1,nh-2):
     f.write("%9d %2d %2d %2d %2d %2d\n"%(nl+i*(nl-1)-1,0,3,0,0,0))
 
@@ -96,9 +101,10 @@ def main(argv):
          ,0,0,0
          ,0,0,0
          ,0,0,0
-         ,2.0,0,0
+         ,10.0,0,0
          ,0,0,0))
 # ...
+#  for i in range(1,(nh-2)/10):
   for i in range(1,nh-2):
     f.write("%9d " 
           "%.2f %.2f %.2f "
@@ -111,57 +117,58 @@ def main(argv):
            ,0,0,0
            ,0,0,0
            ,0,0,0
-           ,2,0,0
+           ,10.0,0,0
            ,0,0,0))
 # ...
-  nElm0 = (nl-1)*(nh-1) - (nl -2)
-  f.write("%9d " 
-          "%.2f %.2f %.2f "
-          "%.2f %.2f %.2f "
-          "%.2f %.2f %.2f "
-          "%.2f %.2f %.2f "
-          "%.2f %.2f %.2f "
-          "\n"
-           %(nElm0
-           ,0,0,0
-           ,0,0,0
-           ,2,0,0
-           ,2,0,0
-           ,0,0,0))
-  for i in range(1,nl-2):
-    f.write("%9d " 
-          "%.2f %.2f %.2f "
-          "%.2f %.2f %.2f "
-          "%.2f %.2f %.2f "
-          "%.2f %.2f %.2f "
-          "%.2f %.2f %.2f "
-          "\n"
-           %(nElm0+i
-           ,0,0,0
-           ,0,0,0
-           ,2,0,0
-           ,0,0,0
-           ,0,0,0))
+# nElm0 = (nl-1)*(nh-1) - (nl -2)
+# f.write("%9d " 
+#         "%.2f %.2f %.2f "
+#         "%.2f %.2f %.2f "
+#         "%.2f %.2f %.2f "
+#         "%.2f %.2f %.2f "
+#         "%.2f %.2f %.2f "
+#         "\n"
+#          %(nElm0
+#          ,0,0,0
+#          ,0,0,0
+#          ,0,0,0
+#          ,2,0,0
+#          ,0,0,0))
+# for i in range(1,nl-2):
+#   f.write("%9d " 
+#         "%.2f %.2f %.2f "
+#         "%.2f %.2f %.2f "
+#         "%.2f %.2f %.2f "
+#         "%.2f %.2f %.2f "
+#         "%.2f %.2f %.2f "
+#         "\n"
+#          %(nElm0+i
+#          ,0,0,0
+#          ,0,0,0
+#          ,2,0,0
+#          ,0,0,0
+#          ,0,0,0))
 # ...
-  f.write("%9d "
-          "%.2f %.2f %.2f "
-          "%.2f %.2f %.2f "
-          "%.2f %.2f %.2f "
-          "%.2f %.2f %.2f "
-          "%.2f %.2f %.2f "
-          "\n"%((nl-1)*(nh-1)
-          ,0,0,0
-          ,0,0,0
-          ,2,0,0
-          ,0,0,0
-          ,0,0,0))
+# f.write("%9d "
+#         "%.2f %.2f %.2f "
+#         "%.2f %.2f %.2f "
+#         "%.2f %.2f %.2f "
+#         "%.2f %.2f %.2f "
+#         "%.2f %.2f %.2f "
+#         "\n"%((nl-1)*(nh-1)
+#         ,0,0,0
+#         ,0,0,0
+#         ,2,0,0
+#         ,0,0,0
+#         ,0,0,0))
 # ...
   f.write("end edgeCfd\n")
 #
-  f.write("elveloc\n")
-  for i in range(1,(nl-1)*(nh-1)):
-    f.write("%9d %.2f %.2f\n"%(i,2.0,0))
-  f.write("end elveloc\nreturn")
+# f.write("elveloc\n")
+# for i in range(1,(nl-1)*(nh-1)):
+#   f.write("%9d %.2f %.2f\n"%(i,2.0,0))
+# f.write("end elveloc\n")
+  f.write("return")
   f.close()
       
 #**********************************************************************

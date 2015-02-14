@@ -91,7 +91,7 @@ c ... OPENMP
           if(openmpSolver) then
 c ...
             if(unsym) then
-              call pcg_omp(neq,nad,iax,ja,ad,au,al,ia(i_m),b,x,ia(i_z)
+             call pcg_omp(neq,nad,iax,ja,ad,au,al,ia(i_m),b,x,ia(i_z)
 c ... comum     
      .                   ,ia(i_r),tol,maxit,matvec_csrd_omp
 c ... loop interno desenrolado 2     
@@ -101,7 +101,7 @@ c    .                  ,ia(i_r),tol,maxit,matvec_csrd_ilu4_omp
 c ... loop externo desenrolado 2 / loop interno desenrolado 2      
 c    .                  ,ia(i_r),tol,maxit,matvec_csrd_ilo2_ilu2_omp
 c ... loop externo desenrolado 2 / loop interno desenrolado 4      
-     .                  ,dot_ompL6,ia(i_threads_y),nlit,.false.)
+     .                  ,dot_ompL4,ia(i_threads_y),nlit,.false.)
 c ....................................................................
 c
 c ...
@@ -153,7 +153,7 @@ c ... ELLPACK
         elseif(matriz .eq. 4) then
 c ... OPENMP
           if(openmpSolver) then
-              call pcg_omp(neq,nad,iax,ja,ad,au,al,ia(i_m),b,x,ia(i_z)
+             call pcg_omp(neq,nad,iax,ja,ad,au,al,ia(i_m),b,x,ia(i_z)
 c ... comum     
      .                    ,ia(i_r),tol,maxit,matvec_ellpack_omp
      .                    ,dot_ompL4,ia(i_threads_y),nlit,.false.)

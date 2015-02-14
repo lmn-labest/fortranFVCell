@@ -154,6 +154,18 @@ c ......................................................................
         write(StrExtensao,'( I6 )') NumArq
         write(StrExtensao,'( A  )') adjustl(StrExtensao)
         StrExtensao='_eddyVisc_'//trim(StrExtensao)//'.vtk'
+      elseif(code .eq. 55) then
+        StrExtensao='_Estatic.txt'
+      elseif(code .eq. 56) then
+        StrExtensao='_MeanVel.vtk'
+      elseif(code .eq. 57) then
+        write(StrExtensao,'( I6 )') NumArq
+        write(StrExtensao,'( A  )') adjustl(StrExtensao)
+        StrExtensao='_pDs_'//trim(StrExtensao)//'.vtk'
+      elseif(code .eq. 58) then
+        write(StrExtensao,'( I6 )') NumArq
+        write(StrExtensao,'( A  )') adjustl(StrExtensao)
+        StrExtensao='_pyPlus_'//trim(StrExtensao)//'.vtk'
       endif    
 c ................................................................
 c

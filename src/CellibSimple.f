@@ -15,8 +15,8 @@ c * u1     - variavel da iteracao anterior                             *
 c * rO     - massa especifica da celula e sua vizinhas em t -1, t e t+1*
 c * w      - campo de velocidade estimado                              *
 c * d      - nao definidp                                              *
-c * grad   - gradiente u reconstruido da celula                        *
-c * gradU1 - gradiente u1 reconstruido da celula                       *
+c * grad1  - gradiente u(iws2) reconstruido da celula                  *
+c * grad2  - gradiente u(2 ou 1) reconstruido da celula                *
 c * gradP  - gradiente p  reconstruido da celula                       *
 c * div    - divergente da velocidade                                  *
 c * fluxl  - limitador de fluxo na celulas                             *
@@ -48,10 +48,10 @@ c * p      - vetor de forcas                                           *
 c * d      - campo d                                                   *
 c * rm(2)  - residou da equacao da quantidade de movmentos             *
 c * im     - interploacao de momentos para velocidade nas faces        *
-c * grad   - gradiente (GREEN GAUSS LINEAR)                            *
+c * grad1   - gradiente (GREEN GAUSS LINEAR)                            *
 c * -------------------------------------------------------------------*
 c **********************************************************************
-      subroutine cell_si_eb_idg_ggl(a,x,u,u0,u1,rO,w,d,grad,gradU1,gradP
+      subroutine cell_si_eb_idg_ggl(a,x,u,u0,u1,rO,w,d,grad1,grad2,gradP
      .                             ,div,iM,fluxl,k,rm,p,sedge,dt,pedge
      .                             ,viz,nshared,ndm,iws1,iws2,nel,sn
      .                             ,acod,Mp,bs)
@@ -64,9 +64,9 @@ c **********************************************************************
       real*8 a(*),sp,xc(3,5),x(ndm,nshared,nshared+1),dfd,nk,um(4),cd
       real*8 sedge(3,nshared+1),ksi(3,4),eta(3,4),n(3,4),meta(4)
       real*8 mksi(4),area(5),ap,u0(5),u1(5),kc
-      real*8 u(5),ca(4),alpha,k(10,*),xm(3,4),grad(ndm,*)
+      real*8 u(5),ca(4),alpha,k(10,*),xm(3,4),grad1(ndm,*)
       real*8 eps,cfl,re,ug(4),xcg(3,4),kf,div(5),cEsp
-      real*8 gradP(ndm,*),gradU1(ndm,*)
+      real*8 gradP(ndm,*),grad2(ndm,*)
       real*8 pf,p1,p2,pface,mKsiF(4),specificMassRef,tRef
       integer pedge(*),viz(*),viznel,iws1,iws2,nel,tRo1,tRo2
       integer ndm,nshared,i,j,icod,acod,idcell,sn(2,*),l
@@ -131,7 +131,7 @@ c ... condicao de contorno para pressao / locamente parabolica
           else if(pedge(i) .eq. 3 .or. pedge(i) .eq. 4 ) then
 c            gama = 2.d0*ca(i)
             ug(i) = u(idCell) 
-c    .            + gama*(grad(1,1)*n(1,i)+grad(2,1)*n(2,i))
+c    .            + gama*(grad1(1,1)*n(1,i)+grad1(2,1)*n(2,i))
           endif
         else
           do j = 1, ndm
@@ -166,11 +166,11 @@ c ... condicao de contorno
           ap   = viscosity*meta(i)
 c ... termos viscosos
           if(iws2 .eq. 1) then
-            p = p + ap*(grad(iws2,idCell)*n(1,i) 
-     .            + gradU1(iws2,idCell)*n(2,i))
+            p = p + ap*(grad1(iws2,idCell)*n(1,i) 
+     .            + grad2(iws2,idCell)*n(2,i))
           else
-            p = p + ap*(grad(iws2,idCell)*n(2,i) 
-     .            + gradU1(iws2,idCell)*n(1,i))
+            p = p + ap*(grad1(iws2,idCell)*n(2,i) 
+     .            + grad2(iws2,idCell)*n(1,i))
           endif
           p  = p -(2.d0/3.d0)*ap*div(idCell)*n(iws2,i)
 c .....................................................................
@@ -245,8 +245,8 @@ c ... media harmonica
 c .....................................................................
           wf(1) = (1.0d0-alpha)*w(1,idcell)    + alpha*w(1,i)
           wf(2) = (1.0d0-alpha)*w(2,idcell)    + alpha*w(2,i)
-          gf(1) = (1.0d0-alpha)*grad(1,idcell) + alpha*grad(1,i)
-          gf(2) = (1.0d0-alpha)*grad(2,idcell) + alpha*grad(2,i)
+          gf(1) = (1.0d0-alpha)*grad1(1,idcell) + alpha*grad1(1,i)
+          gf(2) = (1.0d0-alpha)*grad1(2,idcell) + alpha*grad1(2,i)
           gfk   = gf(1)*ksi(1,i) +  gf(2)*ksi(2,i)
 c ... produtos interno         
           nk    =   n(1,i)*ksi(1,i) + n(2,i)*ksi(2,i)
@@ -277,15 +277,15 @@ c          endif
 c ... fluxo convectivo de ordem superior
           if(cv.lt.0.0d0) then
             du  = u(idcell) - u(i) + eps 
-            gpk = grad(1,i)*(xc(1,idcell)-xc(1,i))
-     .          + grad(2,i)*(xc(2,idcell)-xc(2,i))
+            gpk = grad1(1,i)*(xc(1,idcell)-xc(1,i))
+     .          + grad1(2,i)*(xc(2,idcell)-xc(2,i))
             alpha = mKsiF(i)/mksi(i)
             r     = 2.0d0*gpk/du - 1.0d0
             cvc   = (1.0d0-alpha)*limit(r,icod)*du
           else  
             du  = u(i) - u(idcell) + eps 
-            gpk = (grad(1,idCell)*ksi(1,i)
-     .           + grad(2,idCell)*ksi(2,i))*mksi(i)
+            gpk = (grad1(1,idCell)*ksi(1,i)
+     .           + grad1(2,idCell)*ksi(2,i))*mksi(i)
             alpha = mKsiF(i)/mksi(i)   
             r     = 2.0d0*gpk/du - 1.0d0
             cvc   = alpha*limit(r,icod)*du
@@ -317,9 +317,9 @@ c
 c ... termos nao lineares da viscosidade
           
           alpha = mKsiF(i)/mksi(i)
-          gf(1) = (1.0d0-alpha)*grad(iws2,idcell)  + alpha*grad(iws2,i)
-          gf(2) = (1.0d0-alpha)*gradU1(iws2,idcell) 
-     .          +        alpha *gradU1(iws2,i)
+          gf(1) = (1.0d0-alpha)*grad1(iws2,idcell) + alpha*grad1(iws2,i)
+          gf(2) = (1.0d0-alpha)*grad2(iws2,idcell) 
+     .          +        alpha *grad2(iws2,i)
           gpk   = (1.0d0-alpha)*div(idCell)  + alpha*div(i)
           if( iws2 .eq. 1) then
             p     = p + kf*meta(i)*(gf(1)*n(1,i)+ gf(2)*n(2,i))
@@ -420,15 +420,15 @@ c ...
 c .....................................................................
 c
 c ... Reconstrucao linear Green-Gauss
-      grad(1,1) = 0.0d0
-      grad(2,1) = 0.0d0
+      grad1(1,1) = 0.0d0
+      grad1(2,1) = 0.0d0
       do i = 1, nshared
         uf = um(i)
-        grad(1,1) = grad(1,1) + uf*n(1,i)
-        grad(2,1) = grad(2,1) + uf*n(2,i)
+        grad1(1,1) = grad1(1,1) + uf*n(1,i)
+        grad1(2,1) = grad1(2,1) + uf*n(2,i)
       enddo
-      grad(1,1) = grad(1,1) / area(1)
-      grad(2,1) = grad(2,1) / area(1)
+      grad1(1,1) = grad1(1,1) / area(1)
+      grad1(2,1) = grad1(2,1) / area(1)
 c ... funcao de limatacao do fluxo para o termo advectivo 
       fluxl(1) = 1.0d0
       return
@@ -528,6 +528,10 @@ c ...
       Mp(8) = dfd     ! entrada de massa 
       Mp(9) = p       ! saida de massa
 c ......................................................................
+c
+c ... Energia cinetica 
+      Mp(10) = 0.5d0*vm*vm*area(idCell)
+c ......................................................................
       return  
       end
 c **********************************************************************
@@ -549,8 +553,8 @@ c * u1     - variavel da iteracao anterior                             *
 c * rO     - massa especifica da celula e sua vizinhas em t -1, t e t+1*
 c * w      - campo de velocidade estimado                              *
 c * d      - nao definidp                                              *
-c * grad   - gradiente u reconstruido da celula                        *
-c * gradU1 - gradiente u1 reconstruido da celula                       *
+c * grad1  - gradiente u(iws2) reconstruido da celula                  *
+c * grad2  - gradiente u(2 ou 1) reconstruido da celula                *
 c * gradP  - gradiente p  reconstruido da celula                       *
 c * div    - divergente da velocidade                                  *
 c * fluxl  - limitador de fluxo na celulas                             *
@@ -582,10 +586,10 @@ c * p      - vetor de forcas                                           *
 c * d      - campo d                                                   *
 c * rm(2)  - residou da equacao da quantidade de movmentos             *
 c * im     - interploacao de momentos para velocidade nas faces        *
-c * grad   - gradiente (GREEN GAUSS LINEAR)                            *
+c * grad1   - gradiente (GREEN GAUSS LINEAR)                            *
 c * -------------------------------------------------------------------*
 c **********************************************************************
-      subroutine cell_si_eb_i_ggl(a,x,u,u0,u1,w,d,grad,gradU1,gradP
+      subroutine cell_si_eb_i_ggl(a,x,u,u0,u1,w,d,grad1,grad2,gradP
      .                           ,div,iM,fluxl,k,rm,p,sedge,dt,pedge
      .                           ,viz,nshared,ndm,iws1,iws2,nel,sn
      .                           ,acod,Mp,bs)
@@ -598,13 +602,14 @@ c **********************************************************************
       real*8 a(*),sp,xc(3,5),x(ndm,nshared,nshared+1),dfd,nk,um(4),cd
       real*8 sedge(3,nshared+1),ksi(3,4),eta(3,4),n(3,4),meta(4)
       real*8 mksi(4),area(5),ap,u0(5),u1(5)
-      real*8 u(5),ca(4),alpha,k(10,*),xm(3,4),grad(ndm,*)
+      real*8 u(5),ca(4),alpha,k(10,*),xm(3,4),grad1(ndm,*)
       real*8 eps,cfl,re,ug(4),xcg(3,4),kf,div(5)
-      real*8 gradP(ndm,*),gradU1(ndm,*)
+      real*8 gradP(ndm,*),grad2(ndm,*)
       real*8 pf,p1,p2,pface,mKsiF(4),aNb
       integer pedge(*),viz(*),viznel,iws1,iws2,nel
       integer ndm,nshared,i,j,icod,acod,idcell,sn(2,*),l
       real*8 const,ZERO
+      real*8 s11,s22,s12,modS
       logical bs
       parameter (ZERO =  1.0d-60)
       parameter (eps   = 1.0d-14)
@@ -691,11 +696,11 @@ c ... condicao de contorno
           ap   = viscosity*meta(i)
 c ... termos viscosos
           if(iws2 .eq. 1) then
-            p = p + ap*(grad(iws2,idCell)*n(1,i) 
-     .            + gradU1(iws2,idCell)*n(2,i))
+            p = p + ap*(grad1(iws2,idCell)*n(1,i) 
+     .            + grad2(iws2,idCell)*n(2,i))
           else
-            p = p + ap*(grad(iws2,idCell)*n(2,i) 
-     .            + gradU1(iws2,idCell)*n(1,i))
+            p = p + ap*(grad1(iws2,idCell)*n(2,i) 
+     .            + grad2(iws2,idCell)*n(1,i))
           endif
 c .....................................................................
 c
@@ -769,8 +774,8 @@ c ... media harmonica
 c .....................................................................
           wf(1) = (1.0d0-alpha)*w(1,idcell)    + alpha*w(1,i)
           wf(2) = (1.0d0-alpha)*w(2,idcell)    + alpha*w(2,i)
-          gf(1) = (1.0d0-alpha)*grad(1,idcell) + alpha*grad(1,i)
-          gf(2) = (1.0d0-alpha)*grad(2,idcell) + alpha*grad(2,i)
+          gf(1) = (1.0d0-alpha)*grad1(1,idcell) + alpha*grad1(1,i)
+          gf(2) = (1.0d0-alpha)*grad1(2,idcell) + alpha*grad1(2,i)
 c ... produtos interno         
           nk    =   n(1,i)*ksi(1,i) + n(2,i)*ksi(2,i)
           wfn   =      wf(1)*n(1,i) +  wf(2)*n(2,i)
@@ -793,15 +798,15 @@ c ... fluxo convectivo de primeira ordem
 c ... fluxo convectivo de ordem superior
           if(cv.lt.0.0d0) then
             du  = u(idcell) - u(i) + eps 
-            gpk = grad(1,i)*(xc(1,idcell)-xc(1,i))
-     .          + grad(2,i)*(xc(2,idcell)-xc(2,i))
+            gpk = grad1(1,i)*(xc(1,idcell)-xc(1,i))
+     .          + grad1(2,i)*(xc(2,idcell)-xc(2,i))
             alpha = mKsiF(i)/mksi(i)
             r     = 2.0d0*gpk/du - 1.0d0
             cvc   = (1.0d0-alpha)*limit(r,icod)*du
           else  
             du  = u(i) - u(idcell) + eps 
-            gpk = (grad(1,idCell)*ksi(1,i)
-     .           + grad(2,idCell)*ksi(2,i))*mksi(i)
+            gpk = (grad1(1,idCell)*ksi(1,i)
+     .           + grad1(2,idCell)*ksi(2,i))*mksi(i)
             alpha = mKsiF(i)/mksi(i)   
             r     = 2.0d0*gpk/du - 1.0d0
             cvc   = alpha*limit(r,icod)*du
@@ -832,9 +837,9 @@ c .....................................................................
 c
 c ... termos nao lineares da viscosidade
           alpha = mKsiF(i)/mksi(i)
-          gf(1) = (1.0d0-alpha)*grad(iws2,idcell)  + alpha*grad(iws2,i)
-          gf(2) = (1.0d0-alpha)*gradU1(iws2,idcell) 
-     .          +        alpha *gradU1(iws2,i)
+          gf(1) = (1.0d0-alpha)*grad1(iws2,idcell) + alpha*grad1(iws2,i)
+          gf(2) = (1.0d0-alpha)*grad2(iws2,idcell) 
+     .          +        alpha *grad2(iws2,i)
           if( iws2 .eq. 1) then
             p     = p + kf*meta(i)*(gf(1)*n(1,i)+ gf(2)*n(2,i))
           else if(iws2 .eq. 2 ) then
@@ -925,15 +930,15 @@ c ...
 c .....................................................................
 c
 c ... Reconstrucao linear Green-Gauss 
-      grad(1,1) = 0.0d0
-      grad(2,1) = 0.0d0
+      grad1(1,1) = 0.0d0
+      grad1(2,1) = 0.0d0
       do i = 1, nshared
         uf = um(i)
-        grad(1,1) = grad(1,1) + uf*n(1,i)
-        grad(2,1) = grad(2,1) + uf*n(2,i)
+        grad1(1,1) = grad1(1,1) + uf*n(1,i)
+        grad1(2,1) = grad1(2,1) + uf*n(2,i)
       enddo
-      grad(1,1) = grad(1,1) / area(1)
-      grad(2,1) = grad(2,1) / area(1)
+      grad1(1,1) = grad1(1,1) / area(1)
+      grad1(2,1) = grad1(2,1) / area(1)
 c ... funcao de limatacao do fluxo para o termo advectivo 
       fluxl(1) = 1.0d0
       return
@@ -961,7 +966,7 @@ c ...
 c .....................................................................
 c .. CFL e Reynalds
   700 continue
-c ... cfl number
+c ... cfl numbe
       cfl = (dt*vm)/dsqrt(area(idcell))
       Mp(1) = cfl 
 c .....................................................................
@@ -1026,14 +1031,27 @@ c ...
       Mp(8) = dfd     ! entrada de massa 
       Mp(9) = p       ! saida de massa
 c ......................................................................
+c
+c ... Energia cinetica 
+      Mp(10) = 0.5d0*specificMassA*vm*vm*area(idCell)
+c ......................................................................
+c
+c ... dissipacao de energia da escala resolvivel
+c ... S:S - contracao do tensor de tensoes
+      s11     =   grad1(1,idCell)                 ! du1/dx1                 
+      s22     =   grad2(2,idCell)                 ! du2/dx2
+      s12     =   grad1(2,idCell)+grad2(1,idCell) ! du1/dx2 + du2/dx1
+      modS   =   2.0d0*(s11*s11+s22*s22)+s12*s12       ! S:S
+      Mp(11) =   (viscosity/specificMassA)*modS
+c ......................................................................
       return  
       end
 c **********************************************************************
 c
 c **********************************************************************
-c * CELL_SI_WM_EB_I_GGL : Celula 2D com termo de correção              *
+c * CELL_SI_WM_LES_EB_I_GGL : Celula 2D com termo de correção          *
 c * para o fluxo difusivo e convectivo para equação de momentun        *
-c * formulacao incomepressivel com lei de parade                       *
+c * formulacao incomepressivel com lei de parade e LES                 *
 c * (EDGE-BASE-TVD)                                                    *
 c * -------------------------------------------------------------------*
 c * Parametros de entrada:                                             *
@@ -1047,9 +1065,9 @@ c * u1       - variavel da iteracao anterior                           *
 c * rO       - massa especifica da celula e sua vizinhas em            *
 c * t -1, t e t+1                                                      *
 c * w        - campo de velocidade estimado                            *
-c * d        - nao definidp                                            *
-c * grad     - gradiente u reconstruido da celula                      *
-c * gradU1   - gradiente u1 reconstruido da celula                     *
+c * d        - nao definido                                            *
+c * grad1    - gradiente u(iws2) reconstruido da celula                *
+c * grad2    - gradiente u(2 ou 1) reconstruido da celula              *
 c * gradP    - gradiente p  reconstruido da celula                     *
 c * div      - divergente da velocidade                                *
 c * fluxl    - limitador de fluxo na celulas                           *
@@ -1082,10 +1100,10 @@ c * p      - vetor de forcas                                           *
 c * d      - campo d                                                   *
 c * rm(2)  - residou da equacao da quantidade de movmentos             *
 c * im     - interploacao de momentos para velocidade nas faces        *
-c * grad   - gradiente (GREEN GAUSS LINEAR)                            *
+c * grad1   - gradiente (GREEN GAUSS LINEAR)                            *
 c * -------------------------------------------------------------------*
 c **********************************************************************
-      subroutine cell_si_wm_les_eb_i_ggl(a,x,u,u0,u1,w,d,grad,gradU1
+      subroutine cell_si_wm_les_eb_i_ggl(a,x,u,u0,u1,w,d,grad1,grad2
      .                                  ,gradP,div,iM,fluxl,k,rm,p,sedge
      .                                  ,dt,pedge,viz,nshared,ndm
      .                                  ,iws1,iws2,nel,sn
@@ -1094,26 +1112,30 @@ c **********************************************************************
       include 'simple.fi'
       real*8 areacell,uf,gf(2),gfn,gfk,w(ndm,*),p,wf(ndm),wfn,cv,cvc
       real*8 r,limit,du,rof,gpk,vm,m,cc,dt,df(3,4)
-      real*8 fluxl(nshared+1),km(3,4),d(2,nshared+1),Mp(*)
+      real*8 fluxl(nshared+1),km(3,4),d(2,nshared+1),mP(*)
       real*8 viscosity,specificMassA,rm,iM(4,nshared+1) 
       real*8 a(*),sp,xc(3,5),x(ndm,nshared,nshared+1),dfd,nk,um(4),cd
       real*8 sedge(3,nshared+1),ksi(3,4),eta(3,4),n(3,4),meta(4)
-      real*8 mksi(4),area(5),ap,u0(5),u1(5)
+      real*8 mksi(4),area(5),ap
+      real*8 u(5),u0(5),u1(5)
       real*8 stressW(4),yPLus(4),yPLusMax
-      real*8 u(5),ca(4),alpha,k(10,*),xm(3,4)
+      real*8 ca(4),alpha,k(10,*),xm(3,4)
       real*8 eps,cfl,re,ug(4),xcg(3,4),kf,div(5)
-      real*8 gradP(ndm,*),gradU1(ndm,*),grad(ndm,*)
+      real*8 gradP(ndm,*),grad2(ndm,*),grad1(ndm,*)
       real*8 pf,p1,p2,pface,mKsiF(4),aNb
 c ... LES
       real*8 uc0,uc1,dMin
-      real*8 eddyVisc(5),modS,modSd,filtro,lMin,viscEf1,viscEf2
+      real*8 eddyVisc(5),modS,modSd,filtro,tfiltro,lMin,viscEf1,viscEf2
+      real*8 tFilterModSS(3),tFiltermodS,tFilterS(3),tFilterV(2)
+      real*8 mLilly(3),leornadS(3)
+      real*8 tFilterVv(3),volW,volWt,vel(2)
       real*8,parameter :: Cs  = 0.1d0
-      real*8,parameter :: Cw  = 0.325d0
+      real*8,parameter :: Cw  = 0.17d0
       real*8,parameter :: r23 = 0.666666666666667d0 ! 2.0/3.0
       real*8,parameter :: r13 = 0.333333333333333d0 ! 1.0/3.0
       real*8,parameter :: VanDriest = 26.d0
       real*8,parameter :: vonKarman = 0.4187d0
-      real*8 a1,a2,a3,g11,g12,g21,g22
+      real*8 s11,s22,s12,g11,g12,g21,g22
       integer iCodLes  
       logical wall
 c .......................................................................
@@ -1170,7 +1192,15 @@ c ... velocidade tangencial a face
             endif
           endif
         endif
+
 c .....................................................................
+      enddo
+c ...
+      yPlusMax = yPlus(1)
+      dMin     =    ca(1) 
+      do i = 2, nshared
+        yPlusMax = max(yPlusMax,yPlus(i))
+        dMin     = min(dMin    ,   ca(i)) 
       enddo
 c .....................................................................
 c
@@ -1235,17 +1265,17 @@ c ... condicao de contorno
           ap   = viscosity*meta(i)
 c ... termos viscosos
           if(iws2 .eq. 1) then
-            p = p + ap*(grad(iws2,idCell)*n(1,i) 
-     .            + gradU1(iws2,idCell)*n(2,i))
+            p = p + ap*(grad1(iws2,idCell)*n(1,i) 
+     .            + grad2(iws2,idCell)*n(2,i))
           else
-            p = p + ap*(grad(iws2,idCell)*n(2,i) 
-     .            + gradU1(iws2,idCell)*n(1,i))
+            p = p + ap*(grad1(iws2,idCell)*n(2,i) 
+     .            + grad2(iws2,idCell)*n(1,i))
           endif
 c .....................................................................
 c
 c ... gradiente da pressao com resconstrucao de segunda ordem
 c ... pressao prescrita
-         if(pedge(i) .eq. 3) then  
+          if(pedge(i) .eq. 3) then  
             pFace   = sedge(3,i)
           else
             pFace   = u0(idCell)
@@ -1259,7 +1289,6 @@ c ... calculo da pressao na face atraves de reconstrucao
 c .....................................................................
 c
 c ... parade  
-c         print*,yPlus,stressW,w(iws2,idCell),wfn,eta(iws2,i),nel
           if(pedge(i) .eq. 0 ) then
             if( yPlus(i) .lt.  11.81d0) then
                ap = viscosity*meta(i)/ca(i)
@@ -1325,8 +1354,8 @@ c ... media harmonica  visosidade molevular
 c .....................................................................
           wf(1) = (1.0d0-alpha)*w(1,idcell)    + alpha*w(1,i)
           wf(2) = (1.0d0-alpha)*w(2,idcell)    + alpha*w(2,i)
-          gf(1) = (1.0d0-alpha)*grad(1,idcell) + alpha*grad(1,i)
-          gf(2) = (1.0d0-alpha)*grad(2,idcell) + alpha*grad(2,i)
+          gf(1) = (1.0d0-alpha)*grad1(1,idcell) + alpha*grad1(1,i)
+          gf(2) = (1.0d0-alpha)*grad1(2,idcell) + alpha*grad1(2,i)
 c ... produtos interno         
           nk    =   n(1,i)*ksi(1,i) + n(2,i)*ksi(2,i)
           wfn   =      wf(1)*n(1,i) +  wf(2)*n(2,i)
@@ -1351,10 +1380,10 @@ c
 c ... central-differencing scheme
           if(icod .eq. 9) then
             uc0 = u(i)      
-     .          + grad(1,i)*(xm(1,i) - xc(1,i))
-     .          + grad(2,i)*(xm(2,i) - xc(2,i))  
+     .          + grad1(1,i)*(xm(1,i) - xc(1,i))
+     .          + grad1(2,i)*(xm(2,i) - xc(2,i))  
             uc1 = u(idCell) 
-     .          + grad(1,idCell)*d(1,i) + grad(2,idCell)*d(1,i)   
+     .          + grad1(1,idCell)*d(1,i) + grad1(2,idCell)*d(1,i)   
             du  = 0.5d0*(uc0 + uc1)              
             if(cv.lt.0.0d0) then
               cvc = du - u(idCell)
@@ -1367,15 +1396,15 @@ c ... interpolcao TVD
           else
             if(cv.lt.0.0d0) then
               du    = u(idcell) - u(i) + eps 
-              gpk   = grad(1,i)*(xc(1,idcell)-xc(1,i))
-     .              + grad(2,i)*(xc(2,idcell)-xc(2,i))
+              gpk   = grad1(1,i)*(xc(1,idcell)-xc(1,i))
+     .              + grad1(2,i)*(xc(2,idcell)-xc(2,i))
               alpha = mKsiF(i)/mksi(i)
               r     = 2.0d0*gpk/du - 1.0d0
               cvc   = (1.0d0-alpha)*limit(r,icod)*du
             else  
               du    = u(i) - u(idcell) + eps 
-              gpk   = (grad(1,idCell)*ksi(1,i)
-     .              + grad(2,idCell)*ksi(2,i))*mksi(i)
+              gpk   = (grad1(1,idCell)*ksi(1,i)
+     .              + grad1(2,idCell)*ksi(2,i))*mksi(i)
               alpha = mKsiF(i)/mksi(i)   
               r     = 2.0d0*gpk/du - 1.0d0
               cvc   = alpha*limit(r,icod)*du
@@ -1410,9 +1439,9 @@ c .....................................................................
 c
 c ... termos nao lineares da viscosidade
           alpha = mKsiF(i)/mksi(i)
-          gf(1) = (1.0d0-alpha)*grad(iws2,idcell)  + alpha*grad(iws2,i)
-          gf(2) = (1.0d0-alpha)*gradU1(iws2,idcell) 
-     .          +        alpha *gradU1(iws2,i)
+          gf(1) = (1.0d0-alpha)*grad1(iws2,idcell) + alpha*grad1(iws2,i)
+          gf(2) = (1.0d0-alpha)*grad2(iws2,idcell) 
+     .          +        alpha *grad2(iws2,i)
           if( iws2 .eq. 1) then
             p     = p + kf*meta(i)*(gf(1)*n(1,i)+ gf(2)*n(2,i))
           else if(iws2 .eq. 2 ) then
@@ -1503,15 +1532,15 @@ c ...
 c .....................................................................
 c
 c ... Reconstrucao linear Green-Gauss 
-      grad(1,1) = 0.0d0
-      grad(2,1) = 0.0d0
+      grad1(1,1) = 0.0d0
+      grad1(2,1) = 0.0d0
       do i = 1, nshared
         uf = um(i)
-        grad(1,1) = grad(1,1) + uf*n(1,i)
-        grad(2,1) = grad(2,1) + uf*n(2,i)
+        grad1(1,1) = grad1(1,1) + uf*n(1,i)
+        grad1(2,1) = grad1(2,1) + uf*n(2,i)
       enddo
-      grad(1,1) = grad(1,1) / area(1)
-      grad(2,1) = grad(2,1) / area(1)
+      grad1(1,1) = grad1(1,1) / area(1)
+      grad1(2,1) = grad1(2,1) / area(1)
 c ... funcao de limatacao do fluxo para o termo advectivo 
       fluxl(1) = 1.0d0
       return
@@ -1548,7 +1577,7 @@ c
 c ... Reynolds number
       re = specificMassA*vm*dsqrt(area(idcell))
       re = re/(viscosity+eddyVisc(idCell))
-      Mp(2) = re
+      Mp(2) = re               
 c .....................................................................
 c
 c ...
@@ -1605,6 +1634,30 @@ c
 c ...
       Mp(8) = dfd     ! entrada de massa 
       Mp(9) = p       ! saida de massa
+c ......................................................................
+c
+c ... Energia cinetica 
+      Mp(10) = 0.5d0*specificMassA*vm*vm*area(idCell)
+c ......................................................................
+c
+c ... dissipacao de energia da escala resolvivel
+c ... S:S - contracao do tensor de tensoes
+      s11     =   grad1(1,idCell)                 ! du1/dx1                 
+      s22     =   grad2(2,idCell)                 ! du2/dx2
+      s12     =   grad1(2,idCell)+grad2(1,idCell) ! du1/dx2 + du2/dx1
+      modS   =   2.0d0*(s11*s11+s22*s22)+s12*s12         ! S:S
+      Mp(11) =   (viscosity/specificMassA)*modS
+c ......................................................................
+c
+c ... transferencia de energa da escala resolvivel para escala nao
+c     resolvivel
+c ... S:S - contracao do tensor de tensoes
+c     s11     =   grad1(1,idCell)                 ! du1/dx1                 
+c     s22     =   grad2(2,idCell)                 ! du2/dx2
+c     s12     =   grad1(2,idCell)+grad2(1,idCell) ! du1/dx2 + du2/dx1
+c     modS   =   s11*s11+s22*s22+0.5d0*s12*s12         ! S:S
+      Mp(12) =  (eddyVisc(idCell)/specificMassA)*modS
+c ......................................................................
       return
 c ......................................................................
 c
@@ -1628,25 +1681,18 @@ c ... area
 c     area(1) = areacell(eta,acod)
 c .....................................................................
 c
-c ... smagorinsky (grad -> gradU1; gradU1 -> gradU2)
+c ... smagorinsky (grad1 -> grad2; grad2 -> gradU2)
       if(iCodLes .eq. 1 .or. iCodLes .eq. 0) then 
 c ... |S|
-        a1     =     grad(1,idCell)                ! du1/dx1                 
-        a2     =   gradU1(2,idCell)                ! du2/dx2
-        a3     =   grad(2,idCell)+gradU1(1,idCell) ! du2/dx1 + du1/dx2
-        modS   = dsqrt(2.0d0*(a1*a1+a2*a2)+a3*a3) 
+        s11     =   grad1(1,idCell)                 ! du1/dx1                 
+        s22     =   grad2(2,idCell)                 ! du2/dx2
+        s12     =   grad1(2,idCell)+grad2(1,idCell) ! du2/dx1 + du1/dx2
+        modS   = dsqrt(2.0d0*(s11*s11+s22*s22)+s12*s12) 
 c ... Cs*filtro
         filtro = dsqrt(area(idCell))
         lMin   = Cs*filtro
 c ... near wall Van Driest
-c       yPlusMax = 0.0d0
         if(wall) then
-          yPlusMax = yPlus(1)
-          dMin     =    ca(1) 
-          do i = 2, nshared
-            yPlusMax = max(yPlusMax,yPlus(i))
-            dMin     = min(dMin    ,   ca(i)) 
-          enddo
 c        lMin= min(lMin,lMin*(1.0d0-dexp(-yPlusMax/vanDriest)))
           lMin = min(vonKarman*dMin,lMin)
           lMin = lMin*(1.0d0-dexp(-yPlusMax/vanDriest))
@@ -1658,22 +1704,22 @@ c
 c ... Wall-Adpating Local Eddy-Viscosity (WALE) model
       elseif(iCodLes .eq. 2) then
 c ... S:S - contracao do tensor de tensoes
-        a1     =     grad(1,idCell)                ! du1/dx1                 
-        a2     =   gradU1(2,idCell)                ! du2/dx2
-        a3     =   grad(2,idCell)+gradU1(1,idCell) ! du1/dx2 + du2/dx1
-        modS   =   a1*a1+a2*a2+0.5d0*a3*a3         ! S:S
+        s11     =   grad1(1,idCell)                 ! du1/dx1                 
+        s22     =   grad2(2,idCell)                 ! du2/dx2
+        s12     =   grad1(2,idCell)+grad2(1,idCell) ! du1/dx2 + du2/dx1
+        modS   =   s11*s11+s22*s22+0.5d0*s12*s12         ! S:S
 c .....................................................................
 c
 c ... Sd:Sd
-        g11    =   grad(1,idCell)*  grad(1,idCell) ! du1/dx1*du1/dx1
-        g22    = gradU1(2,idCell)*gradU1(2,idCell) ! du2/dx2*du2/dx2
-        g12    =   grad(2,idCell)*  grad(2,idCell) ! du1/dx2*du1/dx2
-        g21    = gradU1(1,idCell)*gradU1(1,idCell) ! du2/dx1*du2/dx1
-        a3     = r13*(g11+g22)
-        a1     = g11 - a3
-        a2     = g22 - a3
-        a3     = g12 + g21
-        modSd  = a1*a1+a2*a2+0.5d0*a3*a3           !Sd:Sd
+        g11    = grad1(1,idCell)*grad1(1,idCell) ! du1/dx1*du1/dx1
+        g22    = grad2(2,idCell)*grad2(2,idCell) ! du2/dx2*du2/dx2
+        g12    = grad1(2,idCell)*grad1(2,idCell) ! du1/dx2*du1/dx2
+        g21    = grad2(1,idCell)*grad2(1,idCell) ! du2/dx1*du2/dx1
+        s12     = r13*(g11+g22)
+        s11     = g11 - s12
+        s22     = g22 - s12
+        s12     = g12 + g21
+        modSd  = s11*s11+s22*s22+0.5d0*s12*s12           !Sd:Sd
 c .....................................................................
 c
 c ...
@@ -1686,12 +1732,6 @@ c ... Cs*filtro
 c ... near wall Van Driest
 c       yPlusMax = 0.0d0
         if(wall) then
-          yPlusMax = yPlus(1)
-          dMin     =    ca(1) 
-          do i = 2, nshared
-            yPlusMax = max(yPlusMax,yPlus(i))
-            dMin     = min(dMin    ,   ca(i)) 
-          enddo
 c        lMin= min(lMin,lMin*(1.0d0-dexp(-yPlusMax/vanDriest)))
           lMin = min(vonKarman*dMin,lMin)
 c         lMin = lMin*(1.0d0-dexp(-yPlusMax/vanDriest))
@@ -1706,15 +1746,15 @@ c ... Vreman's Model
 c ... filtro*filtro
         filtro = area(idCell)
 c ... alpha
-        g11    =   grad(1,idCell)                  ! du1/dx1
-        g22    = gradU1(2,idCell)                  ! du2/dx2
-        g21    =   grad(2,idCell)                  ! du1/dx2
-        g12    = gradU1(1,idCell)                  ! du2/dx1
+        g11    = grad1(1,idCell)                  ! du1/dx1
+        g22    = grad2(2,idCell)                  ! du2/dx2
+        g21    = grad1(2,idCell)                  ! du1/dx2
+        g12    = grad2(1,idCell)                  ! du2/dx1
 c ...
-        a1     = filtro*(g11*g11+g21*g21)
-        a2     = filtro*(g12*g12+g22*g22)
-        a3     = filtro*(g11*g12+g21*g22)
-        modS   = a1*a2 - a3*a3                             !B           
+        s11     = filtro*(g11*g11+g21*g21)
+        s22     = filtro*(g12*g12+g22*g22)
+        s12     = filtro*(g11*g12+g21*g22)
+        modS   = s11*s22 - s12*s12                             !B           
         modSd  = g11*g11 + g22*g22 + g12*g12 + g21*g21     !alpha:alpha 
 c .....................................................................
 c
@@ -1726,15 +1766,154 @@ c ... viscosidade turbulenta
         eddyVisc(idCell) = specificMassA*2.5d0*Cs*Cs*modS
 c       print*,nel,modS,modSd,g11,g22,g12,g21 
 c       print*,nel, eddyVisc(idCell)
+c ......................................................................
+c
+c ... germando - lilly                                
+      elseif(iCodLes .eq. 4) then
+        volW   = area(idCell)
+        volWt  = volW           
+c ... termo |S|Sij para o filtro de teste
+        s11    =   grad1(1,idCell)                    ! du1/dx1                 
+        s22    =   grad2(2,idCell)                    ! du2/dx2
+        s12    = 0.5d0*(grad1(2,idCell)+grad2(1,idCell))! du1/dx2 + du2/dx1
+        modS   = dsqrt(s11*s11+s22*s22+2.0d0*s12*s12)
+        modSd  = modS
+c ... vol*modS*S11
+        tFilterModSS(1) = modS*s11*volW 
+c ... vol*modS*S22       
+        tFilterModSS(2) = modS*s22*volW
+c ... vol*modS*S12 = vol*modS*S21
+        tFilterModSS(3) = modS*s12*volW  
+c ... termo |S| para o flitro de teste 
+        tFilterModS     = modS*volW             ! vol*modS 
+c ... termo Sij para o flitro de teste 
+c ... vol*S11 
+        tFilterS(1)   = s11*volW               
+c ... vol*S22 
+        tFilterS(2)   = s22*volW               
+c ... vol*S12 = vol*S21 
+        tFilterS(3)   = s12*volW               
+c ... termo vv para para o filtro de teste
+        vel(1)        = w(1,idCell)
+        vel(2)        = w(2,idCell)
+c ... vol*v1*v1
+        tFilterVv(1)  = vel(1)*vel(1)*volW      
+c ... vol*v2*v2
+        tFilterVv(2)  = vel(2)*vel(2)*volW      
+c ... vol*v1*v2 = vol*v2*v1
+        tFilterVv(3)  = vel(1)*vel(2)*volW      
+c ... termo v para para o filtro de teste
+c ... vol*v1
+        tFilterV(1)   = vel(1)*volW                   
+c ... vol*v2
+        tFilterV(2)   = vel(2)*volW      
+        
+        do i = 1, nshared
+          viznel = viz(i)
+          if( viznel .gt. 0) then
+            volW   = area(i)
+            volWt  = volWt + volW           
+c ... termo |S|Sij para o filtro de teste
+            s11    =   grad1(1,i)                   ! du1/dx1                 
+            s22    =   grad2(2,i)                   ! du2/dx2
+            s12    = 0.5d0*(grad1(2,i)+grad2(1,i))  ! du1/dx2 + du2/dx1
+            modS   = dsqrt(s11*s11+s22*s22+2.0d0*s12*s12)
+c ... vol*modS*S11
+            tFilterModSS(1) = tFilterModSS(1) + modS*s11*volW 
+c ... vol*modS*S22       
+            tFilterModSS(2) = tFilterModSS(2) + modS*s22*volW
+c ... vol*modS*S12 = vol*modS*S21
+            tFilterModSS(3) = tFilterModSS(3) + modS*s12*volW  
+c ... termo |S| para o flitro de teste 
+            tFilterModS     = tFilterModS + modS*volW    ! vol*modS 
+c ... termo Sij para o flitro de teste 
+c ... vol*S11 
+            tFilterS(1)   = tFilterS(1) + s11*volW               
+c ... vol*S22 
+            tFilterS(2)   = tFilterS(2) + s22*volW               
+c ... vol*S12 = vol*S21 
+            tFilterS(3)   = tFilterS(3) + s12*volW               
+c ... termo vv para para o filtro de teste
+            vel(1)        = w(1,i)
+            vel(2)        = w(2,i)
+c ... vol*v1*v1
+            tFilterVv(1)  = tFilterVv(1) + vel(1)*vel(1)*volW      
+c ... vol*v2*v2
+            tFilterVv(2)  = tFilterVv(2) + vel(2)*vel(2)*volW      
+c ... vol*v1*v2 = vol*v2*v1
+            tFilterVv(3)  = tFilterVv(3) + vel(2)*vel(1)*volW      
+c ... termo v para para o filtro de teste
+c ... vol*v1
+            tFilterV(1)   = tFilterV(1) + vel(1)*volW                  
+c ... vol*v2
+            tFilterV(2)   = tFilterV(2) + vel(2)*volW
+          endif 
+        enddo
+c ......................................................................
+c
+c ...
+        tFilterModSS(1:3) =  tFilterModSS(1:3)/volWt 
+        tFilterModS       =  tFilterModS/volWt 
+        tFilterS(1:3)     =  tFilterS(1:3)/volWt 
+        tFilterVv(1:3)    =  tFilterVv(1:3)/volWt 
+        tFilterV(1:2)     =  tFilterV(1:2)/volWt
+c ......................................................................
+c
+c ... 
+c       tfiltro = dsqrt(volWt) 
+c       filtro  = dsqrt(aread(idCell)) 
+        filtro  = area(idCell)             ! flitro *flitro
+        tfiltro = volWt                    ! tflitro*tflitro
+c ......................................................................
+c
+c ...  
+c .. L11
+        leornadS(1)       = tFilterVv(1) - tFilterV(1)*tFilterV(1)  
+c .. L22
+        leornadS(2)       = tFilterVv(2) - tFilterV(2)*tFilterV(2) 
+c .. L12 = L21
+        leornadS(3)       = tFilterVv(3) - tFilterV(1)*tFilterV(2)
+c ...
+        g11   = tfiltro*tFilterModS
+c .. M11
+        mLilly(1) = filtro*tFilterModSS(1) - g11*tFilterS(1) + 1.0d-60
+c .. M22
+        mLilly(2) = filtro*tFilterModSS(2) - g11*tFilterS(2) + 1.0d-60
+c .. M12 = M21
+        mLilly(3) = filtro*tFilterModSS(3) - g11*tFilterS(3) + 1.0d-60
+c ......................................................................
+c
+c ... LijMij 
+        g11 = leornadS(1)*mLilly(1) + leornadS(2)*mLilly(2)
+     .      + 2.0d0*leornadS(3)*mLilly(3)
+c ... MijMij 
+        g22 = mLilly(1)*mLilly(1) + mLilly(2)*mLilly(2)
+     .      + 2.0d0*mLilly(3)*mLilly(3)
+c ......................................................................
+c 
+c ... cs² = LijMij/MijMij
+        g11 = 0.5d0*(g11/(g22))
+c ... limita o calor de Cs entre 0.0 - Cs
+        g11 = min(g11,0.04d0)
+        g11 = max(g11,0.0d0)
+c ... media dos Cs²
+        u1(idCell) = g11
+        g11        = g11*area(idCell)
+        do i = 1, nshared
+          viznel = viz(i)
+          if( viznel .gt. 0) then
+            g11        = g11 + u1(i)*area(i)
+          endif
+        enddo
+        g11 = g11/volWt
+c ...
+        eddyVisc(idCell) = specificMassA*g11*filtro*modSd
+c ......................................................................
       endif
 c ......................................................................
 c
-c     if( eddyVisc(idCell) .gt. 1.0d-2) then
-c       print*,nel,eddyVisc(idCell),area(idCell),lMin,Cs*filtro,dMin
-c     endif
-c ... modificao da pressao ( u0 -> pressao)
-c     u0(idCell) = u0(idCell) 
-c    .         - r23*eddyVisc(idCell)*(grad(1,idCell)+gradU1(2,idCell))
+c ...                                      
+      u0(1) = yPlusMax 
 c .....................................................................
       return  
       end

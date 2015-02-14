@@ -6,7 +6,8 @@ c$    include 'omp_lib.h'
       integer max_num_threads,num_threads,
      .        thread_id,thread_begin,thread_end,thread_height,
 c    .        max_num_threads_available,
-     .        nThreadsCell,nThreadsSolver
+     .        nThreadsCell,nThreadsSolver,
+     .        nThreadsDot,nThreadsMatVec
       parameter (max_num_threads = 24)
       common /omp_shared_buffer/ i_threads_y, 
      .             thread_begin(max_num_threads),
@@ -14,6 +15,7 @@ c    .        max_num_threads_available,
      .             thread_height(max_num_threads)
       common /omp_control/ num_threads,openmpCell,openmpSolver
      .                   ,nThreadsCell,nThreadsSolver
+     .                   ,nThreadsDot ,nThreadsMatVec
       common /omp_dot    / omp_dot1,omp_dot2,omp_dot3,omp_dot4
      .                   , omp_dot5,omp_dot6,omp_dot7,omp_dot8
       common /omp_private/ thread_id

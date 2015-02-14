@@ -9,7 +9,7 @@ c ----------------------------------------------------------------------
 c
 c ... Variaveis da estrutura interna de macro-comandos:
 c
-      character*8 mc,macro(60),lmacro1(50),lmacro2(50)
+      character*8 mc,macro(75),lmacro1(50),lmacro2(50)
       character*30 string,nCell,nNod
       character*80 str
       character*80 name
@@ -42,8 +42,8 @@ c ... simple
       integer*8 i_rCellU1,i_rCellU2,i_rCellPc,i_rCellE
       integer*8 i_div,i_mParameter
 c ... turbulence
-      integer*8 i_eddyVisc
-      logical flagTurbulence
+      integer*8 i_eddyVisc,i_wMean,i_cs,i_yPlus,disfiltro,transSubGrid
+      logical flagTurbulence,flagMeanVel
 c ... Coo
       integer*8 i_lin,i_col,i_aCoo
 c ......................................................................
@@ -68,6 +68,7 @@ c ... sistemas de equacao
 
       integer maxItSol,aux
       real*8 solvtolPcg,solvtolBcg
+      real*8 smachn
 c ... simple
       integer neqU1,neqU2,neqPc,nadU1,nadU2,nadPc,neqE,nadE
       integer bandaU1,bandaU2,bandaPc,bandaE 
@@ -85,7 +86,7 @@ c ... transporte
       logical unsymT1
 c ...
       real*8 dt,t,alpha
-      real*8 cfl,re,vol,prandtl,grashof 
+      real*8 cfl,re,vol,prandtl,grashof,kineticEnergy 
       integer istep
       logical bs
 c ... Variaveis da interface de linha de comando
@@ -99,13 +100,14 @@ c ......................................................................
 c
 c ... Arquivos de entrada e saida:
 c
-      integer nin,nout,naux,ntime,noutSimple,noutSave,noutCoo
-      logical log_nl
+      integer nin,nout,naux,ntime,noutSimple,noutSave,noutCoo,noutEst
+      logical log_nl,flagEst
       logical bvtk,flagCoo
       real*8  setelev 
-      data nin /1/, nout /2/, naux /10/, ntime /14/, noutSimple /15/
-      data noutSave /16/, noutCoo /17/
-      data flag_pcd /.false./
+      data nin /1/, nout /2/, naux /10/, ntime /14/ , noutSimple /15/
+      data noutSave /16/, noutCoo /17/ , noutEst/18/
+      data flag_pcd /.false./, flagEst /.false./
+
       data setelev /1.0d0/
 c     arquivo de impressao de nos associados aos seguintes inteiros
 c     1 - entrada padrao                                            
@@ -120,7 +122,7 @@ c     16- arquivo de save para o simple/simpleC
 c     nfile = 50,51,52,...,num_pcell
 c     100 - arquivo auxiliar de execucao
 c ... Macro-comandos disponiveis:
-      data nmc /60/
+      data nmc /75/
       data macro/'loop1   ','mesh    ','loop2   ','solvT   ','pTrans1 ',
      .           'pgrad   ','pveloc  ','pelev   ','mshape  ','simple  ',
      .           'ppres   ','pgradP  ','penergy ','vMassEsp','pmassEsp',
@@ -131,8 +133,11 @@ c ... Macro-comandos disponiveis:
      .           'underP  ','underU  ','setelev ','dt      ','config  ',
      .           'pgradU1 ','pgradU2 ','pgradU3 ','skewC   ','pgeo    ',
      .           'pgradT  ','pgradE  ','pbcoo   ','pcoo    ','turb    ',
-     .           'pvort2D ','bench   ','pEddyVis','        ','        ',
-     .           'underRo ','tolPcg  ','tolBiPcg','maxItSol','stop    '/
+     .           'pvort2D ','bench   ','pEddyVis','pEstatic','MeanVel ',
+     .           'underRo ','tolPcg  ','tolBiPcg','maxItSol','pDsmago ',
+     .           'pyPlus  ','        ','        ','        ','        ',
+     .           '        ','        ','        ','        ','        ',
+     .           '        ','        ','        ','        ','stop    '/
 c ----------------------------------------------------------------------
 c
 c ...
@@ -140,17 +145,19 @@ c ...
       flagCoo = .false.
 c ...
       flagTurbulence = .false.
+      flagMeanVel    = .false.
 c ...
       nmacro1 = 0 
       nmacro2 = 0 
       imacro1 = 0 
       imacro2 = 0 
 c ...      
-      iloop1 = 0
-      iloop2 = 0
-      istep  = 0
-      dt     = 1.0d0
-      alpha  = 1.0d0
+      iloop1   = 0
+      iloop2   = 0
+      iloopAux = 0
+      istep    = 0
+      dt       = 1.0d0
+      alpha    = 1.0d0
 c ...
       cfl     = 0.0d0
       prandtl = 0.0d0
@@ -182,7 +189,7 @@ c ... tsolver               ( PCG - 1|PBiCGSTAB - 2|PGMRES -3 )
       solverU2 = 2
       solverPc = 1
       solverE  = 2
-      maxItSol = 300000
+      maxItSol = 10000
       solvtolPcg = 0.12d-15
       solvtolBcg = 0.12d-15
 c ... nao linear
@@ -324,7 +331,10 @@ c
       i_lin        = 1
       i_col        = 1
       i_aCoo       = 1
+      i_wMean      = 1
       i_eddyVisc   = 1
+      i_cs         = 1
+      i_yPlus      = 1
 c
 c   5 continue 
 c
@@ -386,6 +396,11 @@ c ... log de controle do simple
       write(15,'(a)')'#Controle do simple bPc Ru1 Ru2'
 c ......................................................................
 c
+c ... obtendo precisao da maquina
+      solvtolPcg = smachn()
+      solvtolBcg = smachn()
+c ......................................................................
+c
 c ... controle de tempo
       solvTime        = 0.d0
       elmTime         = 0.d0
@@ -412,6 +427,7 @@ c ... controle de tempo
       posVelocityTime = 0.d0
       simpleUpdateTime= 0.d0
       simpleTime      = 0.d0
+      turbLes         = 0.d0 
       totaltime       = get_time() 
 c ......................................................................
 c
@@ -461,7 +477,7 @@ c .. loop2
       goto 50
 c ....................................................................
    70 continue
-      goto(100,200,300,400,500,!loop1  ,mesh    ,loop2   ,solvT   ,pTrans1 
+      goto(100,200,300,400,500, !loop1  ,mesh    ,loop2   ,solvT   ,pTrans1 
      . 600, 700, 800, 900,1000, !pgrad  ,pveloc  ,pelev   ,mshape  ,simple  
      .1100,1200,1300,1400,1500, !ppres  ,pgradP  ,penergy ,vMassEsp,pmassEsp
      .1600,1700,1800,1900,2000, !ptemp  ,pdiv    ,tSimpU1 ,tSimpU2 ,tSimpPc 
@@ -471,8 +487,11 @@ c ....................................................................
      .3600,3700,3800,3900,4000, !underP ,underU  ,setelev ,dt      ,config  
      .4100,4200,4300,4400,4500, !pgradU1,pgradU2 ,pgradU3 ,skewC   ,pgeo    
      .4600,4700,4800,4900,5000, !pgradT ,pgradE  ,pbcoo   ,pcoo    ,turb    
-     .5100,5200,5300,5400,5500, !pvort2D,bench   ,pEddyVis,        ,        
-     .5600,5700,5800,5900,6000)j!underRo,tolPcg  ,tolBiPcg,maxItSol,stop    
+     .5100,5200,5300,5400,5500, !pvort2D,bench   ,pEddyVis,pEstatic,MeanVel
+     .5600,5700,5800,5900,6000, !underRo,tolPcg  ,tolBiPcg,maxItSol,pDsmago        
+     .6100,6200,6300,6400,6500, !       ,        ,        ,        ,        
+     .6600,6700,6800,6900,7000, !       ,        ,        ,        ,        
+     .7100,7200,7300,7400,7500)j!       ,        ,        ,        ,stop    
 c ----------------------------------------------------------------------
 c
 c ... Execucao dos macro-comandos:
@@ -714,8 +733,10 @@ c ... simple
         i_iM        = alloc_8('iM      ',2*(ndfF-1),numel)
         i_wP        = alloc_8('vpseudo ',ndfF-1,numel)
         i_w0        = alloc_8('v0      ',ndfF-1,numel)
-        i_mParameter= alloc_8('mPar    ',9,numel)
-        i_eddyVisc  = alloc_8('eddyVisc',1,numel)
+        i_mParameter= alloc_8('mPar    ',20,numel)
+        i_eddyVisc  = alloc_8('eddyVisc',1 ,numel)
+        i_cs        = alloc_8('cs      ',1 ,numel)
+        i_yPlus     = alloc_8('yplus   ',1 ,numel)
         call azero(ia(i_gradU1),ndm*numel)
         call azero(ia(i_gradU2),ndm*numel)
         call azero(ia(i_gradPc),ndm*numel)
@@ -737,8 +758,10 @@ c ... simple
         call azero(ia(i_iM) ,2*numel*(ndfF-1))
         call azero(ia(i_wP) ,numel*(ndfF-1))
         call azero(ia(i_w0) ,numel*(ndfF-1))
-        call azero(ia(i_mParameter),6*numel)
+        call azero(ia(i_mParameter),20*numel)
         call azero(ia(i_eddyVisc  ),  numel)
+        call azero(ia(i_yPlus     ),  numel)
+        call azero(ia(i_cs        ),  numel)
        endif
 c ......................................................................
 c
@@ -801,9 +824,10 @@ c ... parametors iniciais
      .                    ,ia(i_e),ia(i_sedgeF),ia(i_pedgeF)
      .                    ,ia(i_ie),ia(i_nelcon),ia(i_ix)
      .                    ,numel,ndm,nen,nen,ndfF,dt,7,1)
-        call calParameter(ia(i_mParameter),ia(i_div),numel,cfl,re
-     .                   ,prandtl,grashof,vol,massa0,fluxoM,dt
-     .                   ,.false.)
+        call calParameter(ia(i_mParameter),ia(i_div),numel  ,cfl,re
+     .                   ,kineticEnergy   ,disfiltro      ,transSubGrid
+     .                   ,prandtl         ,grashof,vol,massa0
+     .                   ,fluxoM          ,dt       ,.false.)
         massa = massa0
 c ... incompressivel 
        else
@@ -959,7 +983,7 @@ c ...
       nCell = 'elVelocidade'
       nNod  = 'noVelocidade'
       call write_res_vtk(ia(i_ix),ia(i_x),ia(i_w),ia(i_nn),nnode
-     .                  ,numel,ndm,nen,ndfF,fileout,nCell,nNod 
+     .                  ,numel,ndm,nen,ndfF-1,fileout,nCell,nNod 
      .                  ,bvtk,7,t,istep
      .                  ,nout)
       i_nn        = dealloc('nn      ')
@@ -1014,7 +1038,7 @@ c ......................................................................
 c ... testa se existe arquivo de parada
       open(100,file='stop.mvf',status='old',err=1010)
       print*, 'Arquivo de parada achado!!'
-      goto 6090     
+      goto 7590     
 c ...      
  1010 continue  
       istep = istep + 1
@@ -1031,36 +1055,45 @@ c .....................................................................
 c
 c ...
       simpleTime = get_time() - simpleTime
-      call simple(ia(i_x)   ,ia(i_ix)     ,ia(i_e)        ,ia(i_ie)
-     .    ,ia(i_nelcon)    ,ia(i_pedgeF) ,ia(i_sedgeF)   ,ia(i_pedgeE)
-     .    ,ia(i_sedgeE)    ,ia(i_w)      ,ia(i_w0)       ,ia(i_wP)    
-     .    ,ia(i_num)       ,ia(i_ls)     ,ia(i_gradU1)   ,ia(i_gradU2)
-     .    ,ia(i_gradP)     ,ia(i_gradPc) ,ia(i_gradE)    ,ia(i_div)   
-     .    ,ia(i_mParameter),ia(i_iM)     ,ia(i_fluxlU1)  ,ia(i_fluxlU2)
-     .    ,ia(i_fluxlPc)   ,ia(i_fluxlE) ,ia(i_rCellU1)  ,ia(i_rCellU2)
-     .    ,ia(i_rCellPc)   ,ia(i_rCellE) ,ia(i_adU1)     ,ia(i_auU1)   
-     .    ,ia(i_alU1)      ,ia(i_bU1)    ,ia(i_bU10)     ,ia(i_iaU1)   
-     .    ,ia(i_jaU1)      ,ia(i_adU2)   ,ia(i_auU2)     ,ia(i_alU2)   
-     .    ,ia(i_bU2)       ,ia(i_bU20)   ,ia(i_iaU2)     ,ia(i_jaU2)   
-     .    ,ia(i_adPc)      ,ia(i_auPc)   ,ia(i_alPc)     ,ia(i_bPC)    
-     .    ,ia(i_iaPc)      ,ia(i_jaPc)   ,ia(i_adE)      ,ia(i_auE)    
-     .    ,ia(i_alE)       ,ia(i_bE)     ,ia(i_bE0)      ,ia(i_iaE) 
-     .    ,ia(i_jaE)       ,ia(i_u1 )    ,ia(i_u2)       ,ia(i_p)   
-     .    ,ia(i_pC)        ,ia(i_Pc1)    ,ia(i_en)       ,ia(i_en0)    
-     .    ,ia(i_ro)        ,ia(i_un)     ,ia(i_mdf)      ,ia(i_md)   
-     .    ,ia(i_ddU)      ,ia(i_temp)    ,ia(i_sx)       ,ia(i_eddyVisc)
-     .    ,numel          ,nnode         ,ndm        
-     .    ,nen            ,nen           ,ndfF           ,ndfE
-     .    ,dt             ,t             ,matrizU1       ,matrizU2     
-     .    ,matrizPc       ,matrizE       ,neqU1          ,neqU2
-     .    ,neqPc          ,neqE          ,nadU1          ,nadU2  
-     .    ,nadPc          ,nadE          ,solverU1       ,solverU2  
-     .    ,solverPc       ,solverE       ,solvTolPcg     ,solvTolBcg   
-     .    ,maxItSol       ,noutSimple    ,itResSimplePlot,sEnergy  
-     .    ,istep          ,cfl           ,re             ,prandtl 
-     .    ,grashof        ,vol           ,unsymPc        ,bs 
-     .    ,prename        ,noutCoo       ,flagTurbulence ,flagCoo)   
-      simpleTime = get_time() - simpleTime 
+      call simple(ia(i_x)   ,ia(i_ix)     ,ia(i_e)      ,ia(i_ie)
+     .    ,ia(i_nelcon)    ,ia(i_pedgeF) ,ia(i_sedgeF)  ,ia(i_pedgeE)
+     .    ,ia(i_sedgeE)    ,ia(i_w)      ,ia(i_w0)      ,ia(i_wP)    
+     .    ,ia(i_num)       ,ia(i_ls)     ,ia(i_gradU1)  ,ia(i_gradU2)
+     .    ,ia(i_gradP)     ,ia(i_gradPc) ,ia(i_gradE)   ,ia(i_div)   
+     .    ,ia(i_mParameter),ia(i_iM)     ,ia(i_fluxlU1) ,ia(i_fluxlU2)
+     .    ,ia(i_fluxlPc)   ,ia(i_fluxlE) ,ia(i_rCellU1) ,ia(i_rCellU2)
+     .    ,ia(i_rCellPc)   ,ia(i_rCellE) ,ia(i_adU1)    ,ia(i_auU1)   
+     .    ,ia(i_alU1)      ,ia(i_bU1)    ,ia(i_bU10)    ,ia(i_iaU1)   
+     .    ,ia(i_jaU1)      ,ia(i_adU2)   ,ia(i_auU2)    ,ia(i_alU2)   
+     .    ,ia(i_bU2)       ,ia(i_bU20)   ,ia(i_iaU2)    ,ia(i_jaU2)   
+     .    ,ia(i_adPc)      ,ia(i_auPc)   ,ia(i_alPc)    ,ia(i_bPC)    
+     .    ,ia(i_iaPc)      ,ia(i_jaPc)   ,ia(i_adE)     ,ia(i_auE)    
+     .    ,ia(i_alE)       ,ia(i_bE)     ,ia(i_bE0)     ,ia(i_iaE) 
+     .    ,ia(i_jaE)       ,ia(i_u1 )    ,ia(i_u2)      ,ia(i_p)   
+     .    ,ia(i_pC)        ,ia(i_Pc1)    ,ia(i_en)      ,ia(i_en0)    
+     .    ,ia(i_ro)        ,ia(i_un)     ,ia(i_mdf)     ,ia(i_md)   
+     .    ,ia(i_ddU)       ,ia(i_temp)   ,ia(i_sx)     ,ia(i_eddyVisc)
+     .    ,ia(i_cs)        ,ia(i_yPlus)              
+     .    ,numel          ,nnode       ,ndm        
+     .    ,nen            ,nen         ,ndfF          ,ndfE
+     .    ,dt             ,t           ,matrizU1      ,matrizU2     
+     .    ,matrizPc       ,matrizE     ,neqU1         ,neqU2
+     .    ,neqPc          ,neqE        ,nadU1         ,nadU2  
+     .    ,nadPc          ,nadE        ,solverU1      ,solverU2  
+     .    ,solverPc       ,solverE     ,solvTolPcg    ,solvTolBcg   
+     .    ,maxItSol       ,noutSimple  ,itResSimplePlot,sEnergy  
+     .    ,istep          ,cfl         ,re            ,kineticEnergy 
+     .    ,prandtl        ,disfiltro   ,transSubGrid 
+     .    ,grashof        ,vol         ,unsymPc       ,bs 
+     .    ,prename        ,noutCoo     ,flagTurbulence,flagCoo)   
+      simpleTime = get_time() - simpleTime
+c .....................................................................
+c
+c ... calcula a media temporal da velociadade
+      if(flagMeanVel) then
+        call meanVel(ia(i_wMean),ia(i_w),numel,ndm,t,dt,.false.)
+      endif
+c ...................................................................... 
       goto 50
 c ----------------------------------------------------------------------
 c
@@ -1140,7 +1173,6 @@ c ......................................................................
       print*, 'Macro VMASSESPE'
       vMass = .true.
       write(*,*)' Set vMass ',vMass
-      goto 50
       goto 50
 c ......................................................................
 c
@@ -1227,7 +1259,7 @@ c ......................................................................
       goto 50
  1810 continue
       print*,'Erro na leitura da macro (TSIMPU1) !'
-      goto 5000
+      goto 9999
 c ......................................................................
 c
 c ... Macro-comando: TSIMPU2
@@ -1242,7 +1274,7 @@ c ......................................................................
       goto 50
  1910 continue
       print*,'Erro na leitura da macro (TSIMPU2) !'
-      goto 5000
+      goto 9999
 c ......................................................................
 c
 c ... Macro-comando: TSIMPPC
@@ -1257,7 +1289,7 @@ c ......................................................................
       goto 50
  2010 continue
       print*,'Erro na leitura da macro (TSIMPPC) !'
-      goto 5000
+      goto 9999
 c ......................................................................
 c
 c ... Macro-comando: TSIMPEN
@@ -1272,7 +1304,7 @@ c ......................................................................
       goto 50
  2110 continue
       print*,'Erro na leitura da macro (TSIMPEN) !'
-      goto 5000
+      goto 9999
 c ......................................................................
 c
 c ... Macro-comando: TDINAMIC
@@ -1297,7 +1329,7 @@ c ......................................................................
       goto 50
  2310 continue
       print*,'Erro na leitura da macro (MAXITT1) !'
-      goto 5000
+      goto 9999
 c ......................................................................
 c
 c ... Macro-comando: PRESMASS     
@@ -1352,7 +1384,7 @@ c ......................................................................
       goto 50
  2710 continue
       print*,'Erro na leitura da macro (ITSIMPLE) !'
-      goto 5000
+      goto 9999
 c ----------------------------------------------------------------------
 c
 c ... Macro-comando:
@@ -1367,7 +1399,7 @@ c ......................................................................
       goto 50
  2810 continue
       print*,'Erro na leitura da macro (TTRANST1) !'
-      goto 5000
+      goto 9999
 c ----------------------------------------------------------------------
 c
 c ... Macro-comando: SETPNODE impressao de grandezas por no no tempo
@@ -1430,7 +1462,6 @@ c ......................................................................
       write(string,'(30a)') (word(i),i=1,30)
       read(string,*,err =2810,end =2810) underPc
       write(*,'(a,d10.2)')' Set underPc for ',underPc
-      goto 50
       goto 50
 c ----------------------------------------------------------------------
 c
@@ -1551,7 +1582,7 @@ c ......................................................................
       goto 50
  3810 continue
       print*,'Erro na leitura da macro (SETELEV) !'
-      goto 5000      
+      goto 9999      
 c ......................................................................
 c
 c ... Macro-comando: DT
@@ -1566,7 +1597,7 @@ c ......................................................................
       goto 50
  3910 continue
       print*,'Erro na leitura da macro (DT) !'
-      goto 5000      
+      goto 9999      
 c ----------------------------------------------------------------------
 c
 c ......................................................................
@@ -1888,21 +1919,28 @@ c ......................................................................
 c
 c ......................................................................
 c
-c ... Macro-comando:        
+c ... Macro-comando: PESTATIC   
 c
 c ......................................................................
  5400 continue
-      print*, 'Macro 5400'
+      print*, 'Macro PESTATIC'
+      call printStatistics(re          ,kineticEnergy,disfiltro
+     .                    ,transSubGrid,cfl          ,t
+     .                    ,istep       ,prename      ,noutEst
+     .                    ,flagEst)
       goto 50
 c ......................................................................
 c
 c ......................................................................
 c
-c ... Macro-comando:        
+c ... Macro-comando: PMEANVEL
 c
 c ......................................................................
  5500 continue
-      print*, 'Macro 5500'
+      print*, 'Macro MEANVEL'
+      flagMeanVEl = .true.
+      i_wMean     = alloc_8('wMean   ',ndfF-1,numel)
+      call azero(ia(i_wMean) ,numel*(ndfF-1))
       goto 50
 c ......................................................................
 c
@@ -1920,7 +1958,7 @@ c ......................................................................
       goto 50
  5610 continue
       print*,'Erro na leitura da macro (UNDERRO) !'
-      goto 5000
+      goto 9999
 c ......................................................................
 c
 c ......................................................................
@@ -1937,7 +1975,7 @@ c ......................................................................
       goto 50
  5710 continue
       print*,'Erro na leitura da macro (TOLPCG) !'
-      goto 5000
+      goto 9999
 c ......................................................................
 c
 c ......................................................................
@@ -1954,7 +1992,7 @@ c ......................................................................
       goto 50
  5810 continue
       print*,'Erro na leitura da macro (TOLBIPCG) !'
-      goto 5000
+      goto 9999
 c ......................................................................
 c
 c ......................................................................
@@ -1971,7 +2009,77 @@ c ......................................................................
       goto 50
  5910 continue
       print*,'Erro na leitura da macro (MAXITSOL) !'
-      goto 5000
+      goto 9999
+c ......................................................................
+c
+c ......................................................................
+c
+c ... Macro-comando: PDSMAGO         
+c
+c ......................................................................
+ 6000 continue
+c ...
+      print*, 'Macro PDSMAGO'
+      call uformnode(ia(i_un),ia(i_cs),ddum,ddum,ia(i_x),ia(i_mdf)
+     .              ,ia(i_ix),ia(i_md),nnode,numel,ndm,nen,1,2)
+c ......................................................................
+c
+c ...      
+      fileout     = name(prename,istep,57)
+      nCell = 'elPsSmagorinsk'
+      nNod  = 'noPdSmagorinsk'
+      call write_res_vtk(ia(i_ix),ia(i_x),ia(i_cs),ia(i_un),nnode
+     .                  ,numel
+     .                  ,ndm,nen,1,fileout,nCell,nNod ,bvtk,4,t,istep
+     .                  ,nout) 
+c ......................................................................
+      goto 50
+c ......................................................................
+c
+c ......................................................................
+c
+c ... Macro-comando: PYPLUS         
+c
+c ......................................................................
+ 6100 continue
+c ...
+      print*, 'Macro PYPLUS'
+      call uformnode(ia(i_un),ia(i_yPlus),ddum,ddum,ia(i_x),ia(i_mdf)
+     .              ,ia(i_ix),ia(i_md),nnode,numel,ndm,nen,1,2)
+c ......................................................................
+c
+c ...      
+      fileout     = name(prename,istep,58)
+      nCell = 'elyPlus'
+      nNod  = 'noyPlus'
+      call write_res_vtk(ia(i_ix),ia(i_x),ia(i_yPlus),ia(i_un),nnode
+     .                  ,numel
+     .                  ,ndm,nen,1,fileout,nCell,nNod ,bvtk,4,t,istep
+     .                  ,nout) 
+c ......................................................................
+      goto 50
+c ......................................................................
+c
+c ......................................................................
+c
+c ... Macro-comando:         
+c
+c ......................................................................
+ 6200 continue
+ 6300 continue
+ 6400 continue
+ 6500 continue
+ 6600 continue
+ 6700 continue
+ 6800 continue
+ 6900 continue
+ 7000 continue
+ 7100 continue
+ 7200 continue
+ 7300 continue
+ 7400 continue
+      print*, 'Macro  '
+      goto 9999
 c ......................................................................
 c
 c ......................................................................                                                                        
@@ -1979,7 +2087,7 @@ c
 c ... Macro-comando: STOP   
 c
 c ......................................................................
- 6090 continue
+ 7590 continue
       print*, 'Salvando ...'       
       fileout = name(prename,0,30)
       call saveSimple(ia(i_w),ia(i_w0),ia(i_p),ia(i_en),ia(i_en0)
@@ -1987,11 +2095,41 @@ c ......................................................................
      .               ,fileout,.false.,sEnergy,noutSave)
       print*, 'Salvo.'
 c ......................................................................        
- 6000 continue
+ 7500 continue
+c ...
       close(3)
       close(10)
       close(nin)
+c ......................................................................        
+c
+c ...
+      if(flagMeanVel) then
+        call meanVel(ia(i_wMean),ia(i_w),numel,ndm,t,dt,.true.)
+c ...        
+        fileout = name(prename,0,56)
+        i_nn        = alloc_8('nn      ',ndm,nnode)
+c ......................................................................
+c
+c ...      
+        call uformnode(ia(i_nn) ,ia(i_wMean)   ,ddum,ddum,ia(i_x)
+     .                ,ia(i_mdf),ia(i_ix)      ,ia(i_md)
+     .                ,nnode    ,numel         ,ndm,nen,ndfF-1,2)
+c ......................................................................
+c
+c ...      
+        nCell = 'elMeanVel'
+        nNod  = 'noMeanVel'
+        call write_res_vtk(ia(i_ix),ia(i_x),ia(i_wMean),ia(i_nn)
+     .                    ,nnode   ,numel  ,ndm,nen,ndfF-1,fileout
+     .                    ,nCell,nNod ,bvtk,7,t,istep,nout) 
+c ......................................................................
+        i_nn        = dealloc('nn      ')
+      endif
+c ......................................................................        
+c
+c ...
       totaltime = get_time() - totaltime
+ 9999 continue
       call write_log(ntime,prename,neqU1,neqU2,neqPc,neqE
      .              ,nadU1,nadU2,nadPc,nadE,bandaU1,bandaU2,bandaPc
      .              ,bandaE,cfl,re,prandtl,grashof,Massa0,Massa,FluxoM

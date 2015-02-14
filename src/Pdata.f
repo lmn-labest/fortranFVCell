@@ -114,6 +114,60 @@ c =====================================================================
 c *********************************************************************
 c
 c *********************************************************************
+c * PRINTSTATISTICS: empressao de estaticas no tempo                 *
+c * ---------------------------------------------------------------- *
+c * Parametro de Entrada :                                           *
+c * ---------------------------------------------------------------- *
+c * cfl          - numero de courant                                 *
+c * re           - numero de reynalds                                *
+c * kEnrgy       - energia cinetica total                            *
+c * disfiltro    - dissipaco de energia resolvivel pelas tensoes     *
+c * viscosas                                                         *   
+c * transSubGrid - tranferencia de enrgia para o subgrid             *
+c * istep        - passo de tempo                                    *
+c * dt           - intercalo de tempo                                *
+c * prename      - nome do arquivo de saida                          *
+c * nout         - numero do arquivo a ser escrito                   *
+c * open         - abertura de um novo arquivo .true.                *
+c * -----------------------------------------------------------------*
+c *  Parametro de Saida :                                            *
+c ********************************************************************
+      subroutine printStatistics(re          ,energy,disfiltro
+     .                          ,transSubGrid,cfl   ,t
+     .                          ,istep,prename,nout,open)
+      implicit none
+c ===        
+      integer istep,nout
+      real*8 t,re,energy,cfl,transSubGrid,disfiltro
+      character*80 fileout,prename,name
+      logical open
+c =====================================================================        
+c
+c ===
+c ... abre um novo arquivo
+      if(open) then
+c ... reabre o arquivo e add uma nova linha      
+        fileout = name(prename,0,55)
+        open(unit=nout,file=fileout,status ='old',access='append') 
+      else
+        fileout     = name(prename,0,55)
+        open(nout, file=fileout ,action= 'write')
+        write(nout,'(a)')
+     . '#Passo Tempo(s) Reynold Energia cfl disFiltro transSubGrid'
+        open = .true.
+      endif
+c =====================================================================        
+c
+c === 
+      write(nout,'(i9,f16.6,9f20.10)')istep,t,re,energy,cfl
+     .            ,disfiltro,transSubGrid
+      close(nout)
+      return
+      end
+c =====================================================================        
+c *********************************************************************
+c
+c *********************************************************************
 c *  SETELEV : substitui a coordenada Z pela solucao                  *
 c *  ---------------------------------------------------------------- *
 c *  Parametro de Entrada :                                           *
