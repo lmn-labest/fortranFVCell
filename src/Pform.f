@@ -712,12 +712,11 @@ c .....................................................................
 c ... openmp
       idCell = nshared + 1
       if(openmpCell)Then
-c     if(.false.)Then
 c$omp parallel private(nel,i,ii,j,jj,k,kk,vizNel,no,ma,type)
 c$omp.private(lx,le,lw,lsedge,lRo,lmP,lEddyVisc,lgrad1,lgrad2)
 c$omp.private(lviz,lpedge)
 c$omp.private(ddum,idum,ldum)
-c$omp.shared(numel,nen,ndm,nst,nshared)
+c$omp.shared(numel,nen,ndm,nst,nshared,idCell)
 c$omp.shared(w,mP,x,eddyVisc,e,dt,Ro,sedge,nelcon,pedge)
 c$omp.shared(gradU1,gradU2,ix,ie) 
 c$omp.num_threads(nThreadsCell)
@@ -1221,7 +1220,8 @@ c ... openmp
 c$omp parallel private(nel,i,ii,j,jj,k,vizNel,no,ma,type)
 c$omp.private(lx,le,lviz,ddum,idum,ldum,ltemp)
 c$omp.shared(x,e,nelcon,ix,ie,cPc)
-c$omp.shared(numel,nen,ndm,nshared,iws,lib) num_threads(num_threads)
+c$omp.shared(numel,nen,ndm,nshared,iws,lib) num_threads(nThreadsCell)
+
 c ... zerando os arranjos locais
 c$omp do
         do nel = 1, numel
@@ -1839,6 +1839,7 @@ c * ----------------------------------------------------------------- *
 c * Parametros de entrada :                                           *
 c * ----------------------------------------------------------------- *
 c *  w      - campo de velociade                                      *
+c *  p      - campo de pressao                                        *
 c *  gradU1 - gradiente do campo de velocidade u1                     *
 c *  gradU2 - gradiente do campo de velocidade u2                     *
 c *  x      - coordenadas nodais                                      *
@@ -1861,6 +1862,7 @@ c * Parametros de saida :                                             *
 c * ----------------------------------------------------------------- *
 c * eddyVisc- viscoside turbulenta                                    *
 c * cs      - coeficiente smagorinsk dinamico                         *
+c * p       - campo de pressao modificado                             *
 c * ----------------------------------------------------------------- *
 c *********************************************************************
       subroutine turbulenceLes(w,gradU1,gradU2,x,eddyVisc
@@ -1868,7 +1870,6 @@ c *********************************************************************
      .                        ,sedge,e,ie,nelcon,pedge,ix
      .                        ,numel,ndm,nen,nshared,ndf
      .                        ,nst,iws,iws1,lib)  
-      implicit none
       include 'openmp.fi'
       integer numel,nen,ndm,ndf,nst,nshared
       real*8 gradU1(ndm,*),gradU2(ndm,*)
@@ -1884,28 +1885,29 @@ c ... variaveis locais por elemento
       real*8  lsedge(28) !(max 4 * 7)
       real*8  lx(168)    !(max 3 * 8 * 7)
       real*8  lw(21)     !(max 3 * 7)
-      real*8  leddyVisc(7),lCs(7),lyPlus    
+      real*8  leddyVisc(7),lCs(7)
+      real*8  lyPlus
 c ... variaveis locais      
       integer nel,i,ii,j,jj,k,kk
       integer viznel,no,ma
-      idCell = nshared + 1
 c ........................................................................
 c
 c ... openmp
       if(openmpCell) then
+        idCell = nshared + 1
 c ... loop nas celulas
-c$omp parallel private(nel,i,ii,j,jj,k,vizNel,no,ma,type)
+c$omp parallel default(none) private(nel,i,ii,j,jj,k,vizNel,no,ma,type)
 c$omp.private(lviz,lpedge)
 c$omp.private(lgradU1,lgradU2,le,lsedge,lx,lw)
 c$omp.private(leddyVisc,lCs,lyPlus)
-c$omp.shared(numel,nen,ndm,ndf,nst,nshared,lib,iws,iws1)
-c$omp.shared(w,gradU1,gradU2,x,eddyVisc,cs,yPlus,ddum)
+c$omp.shared(numel,nen,ndm,ndf,nst,idCell,nshared,lib,iws,iws1)
+c$omp.shared(w,p,gradU1,gradU2,x,eddyVisc,cs,yPlus,ddum)
 c$omp.shared(sedge,e,nelcon,pedge,ix,ie) 
-c$omp.num_threads(num_threads)
+c$omp.num_threads(nThreadsCell)
 c$omp do
         do nel = 1, numel
 c ... loop da celula central
-          lCs(idCell) = cs(nel)
+          lCs(idCell)   = cs(nel)
           do k = 1, ndm
             ii         = nshared*ndm + k
             lw(ii)     =     w(k,nel)   
@@ -1928,8 +1930,8 @@ c ...
           enddo
 c ... loop na aresta        
           do j = 1 , nshared
-            viznel = nelcon(j,nel)
-            lviz(j)= viznel
+            viznel   = nelcon(j,nel)
+            lviz(j)  = viznel
             if( viznel .gt. 0) then
               lCs(j)  = cs(viznel)
               ma = ix(nen+1,viznel)
@@ -1959,17 +1961,17 @@ c ... loop nos vertices do elemento vizinho
           enddo  
           type = ie(ma)
 c ...
-         call celllib(ddum   ,lx     ,ddum   ,ddum     ,lyPlus
-     .               ,lCs    ,ddum   ,lgradU1,lgradU2  ,ddum   
-     .               ,ddum   ,ddum   ,ddum   ,lw       ,ddum
-     .               ,le     ,ddum   ,ddum   ,lsedge   ,lpedge
-     .               ,lviz   ,ddum   ,nen    ,nshared  ,ndm   
-     .               ,type   ,iws    ,iws1   ,lib      ,nel 
-     .               ,ddum   ,ddum   ,ddum   ,leddyVisc,.false.)
+          call celllib(ddum   ,lx     ,ddum   ,ddum     ,lyPlus
+     .                ,lCs    ,ddum   ,lgradU1,lgradU2  ,ddum   
+     .                ,ddum   ,ddum   ,ddum   ,lw       ,ddum
+     .                ,le     ,ddum   ,ddum   ,lsedge   ,lpedge
+     .                ,lviz   ,ddum   ,nen    ,nshared  ,ndm   
+     .                ,type   ,iws    ,iws1   ,lib      ,nel 
+     .                ,ddum   ,ddum   ,ddum   ,leddyVisc,.false.)
 c .....................................................................
            eddyVisc(nel) = leddyVisc(idCell)
                 cs(nel)  = lCs(idCell)
-             yPlus(nel)  = lyPlus          
+             yPlus(nel)  = lyPlus
         enddo
 c$omp enddo
 c$omp end parallel
@@ -1977,9 +1979,10 @@ c .....................................................................
 c
 c ... sequencial
       else
+        idCell = nshared + 1
         do nel = 1, numel
 c ... loop da celula central
-          lCs(idCell) = cs(nel)
+          lCs(idCell)   = cs(nel)
           do k = 1, ndm
             ii         = nshared*ndm + k
             lw(ii)     =     w(k,nel)   
@@ -2005,7 +2008,7 @@ c ... loop na aresta
             viznel = nelcon(j,nel)
             lviz(j)= viznel
             if( viznel .gt. 0) then
-              lCs(j)  = cs(viznel)
+              lCs(j)   = cs(viznel)
               ma = ix(nen+1,viznel)
               do kk = 1, 10
                 le(kk,j) = e(kk,ma)
@@ -2033,13 +2036,13 @@ c ... loop nos vertices do elemento vizinho
           enddo  
           type = ie(ma)
 c ...
-         call celllib(ddum   ,lx     ,ddum   ,ddum     ,lyPlus
-     .               ,lCs    ,ddum   ,lgradU1,lgradU2  ,ddum   
-     .               ,ddum   ,ddum   ,ddum   ,lw       ,ddum
-     .               ,le     ,ddum   ,ddum   ,lsedge   ,lpedge
-     .               ,lviz   ,ddum   ,nen    ,nshared  ,ndm   
-     .               ,type   ,iws    ,iws1   ,lib      ,nel 
-     .               ,ddum   ,ddum   ,ddum   ,leddyVisc,.false.)
+          call celllib(ddum   ,lx     ,ddum   ,ddum     ,lyPlus
+     .                ,lCs    ,ddum   ,lgradU1,lgradU2  ,ddum   
+     .                ,ddum   ,ddum   ,ddum   ,lw       ,ddum
+     .                ,le     ,ddum   ,lpres  ,lsedge   ,lpedge
+     .                ,lviz   ,ddum   ,nen    ,nshared  ,ndm   
+     .                ,type   ,iws    ,iws1   ,lib      ,nel 
+     .                ,ddum   ,ddum   ,ddum   ,leddyVisc,.false.)
 c .....................................................................
            eddyVisc(nel) = leddyVisc(idCell)
                  cs(nel) = lCs(idCell)  

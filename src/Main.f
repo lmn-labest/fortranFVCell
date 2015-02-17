@@ -5,6 +5,7 @@
       include 'time.fi'
       include 'openmp.fi'
       include 'simple.fi'
+      include 'les.fi'
 c ----------------------------------------------------------------------
 c
 c ... Variaveis da estrutura interna de macro-comandos:
@@ -132,10 +133,10 @@ c ... Macro-comandos disponiveis:
      .           'underPc ','setpcell','pctemp  ','pcgrad  ','simpleC ',
      .           'underP  ','underU  ','setelev ','dt      ','config  ',
      .           'pgradU1 ','pgradU2 ','pgradU3 ','skewC   ','pgeo    ',
-     .           'pgradT  ','pgradE  ','pbcoo   ','pcoo    ','turb    ',
+     .           'pgradT  ','pgradE  ','pbcoo   ','pcoo    ','les     ',
      .           'pvort2D ','bench   ','pEddyVis','pEstatic','MeanVel ',
      .           'underRo ','tolPcg  ','tolBiPcg','maxItSol','pDsmago ',
-     .           'pyPlus  ','        ','        ','        ','        ',
+     .           'pyPlus  ','pDStress','pStress ','        ','        ',
      .           '        ','        ','        ','        ','        ',
      .           '        ','        ','        ','        ','stop    '/
 c ----------------------------------------------------------------------
@@ -189,7 +190,7 @@ c ... tsolver               ( PCG - 1|PBiCGSTAB - 2|PGMRES -3 )
       solverU2 = 2
       solverPc = 1
       solverE  = 2
-      maxItSol = 10000
+      maxItSol = 50000
       solvtolPcg = 0.12d-15
       solvtolBcg = 0.12d-15
 c ... nao linear
@@ -351,6 +352,11 @@ c ... Abertura de arquivos:
       open(nin, file= filein, status= 'old', err=15, action= 'read')
       goto 20
    15 continue
+      print*,'******************************************************' 
+      do i = 1, nmc
+        print*,'macros: ',macro(i)  
+      enddo
+      print*,'******************************************************' 
       print*, 'Arquivo nao existente !'
       nargs = 0
       goto 10
@@ -486,10 +492,10 @@ c ....................................................................
      .3100,3200,3300,3400,3500, !underPc,setpcell,pctemp  ,pcgrad  ,simpleC 
      .3600,3700,3800,3900,4000, !underP ,underU  ,setelev ,dt      ,config  
      .4100,4200,4300,4400,4500, !pgradU1,pgradU2 ,pgradU3 ,skewC   ,pgeo    
-     .4600,4700,4800,4900,5000, !pgradT ,pgradE  ,pbcoo   ,pcoo    ,turb    
+     .4600,4700,4800,4900,5000, !pgradT ,pgradE  ,pbcoo   ,pcoo    ,les     
      .5100,5200,5300,5400,5500, !pvort2D,bench   ,pEddyVis,pEstatic,MeanVel
      .5600,5700,5800,5900,6000, !underRo,tolPcg  ,tolBiPcg,maxItSol,pDsmago        
-     .6100,6200,6300,6400,6500, !       ,        ,        ,        ,        
+     .6100,6200,6300,6400,6500, !pyPlus ,pdSress ,pStress ,        ,        
      .6600,6700,6800,6900,7000, !       ,        ,        ,        ,        
      .7100,7200,7300,7400,7500)j!       ,        ,        ,        ,stop    
 c ----------------------------------------------------------------------
@@ -1817,12 +1823,26 @@ c ......................................................................
 c
 c ......................................................................
 c
-c ... Macro-comando: TURB   
+c ... Macro-comando: LES    
 c
 c ......................................................................
  5000 continue
-      print*, 'Macro TURB'
+      print*, 'Macro LES'
       flagTurbulence = .true.
+      call readmacro(nin,.false.)
+      write(string,'(30a)') (word(i),i=1,30)
+      read(string,*,err = 5010,end = 5010) lesModel
+      write(*,'(a,i2)')' Set SGS Model for ',lesModel
+      call readmacro(nin,.false.)
+      write(string,'(30a)') (word(i),i=1,30)
+      read(string,*,err = 5011,end = 5011) wallModelF
+      write(*,'(a,i2)')' Set Wall Model for ',wallModelF
+      goto 50
+ 5010 continue
+      print*,'Erro na leitura da macro (SGS-Model - LES) !'
+ 5011 continue
+      print*,'Erro na leitura da macro (Wall-Model - LES) !'
+      goto 9999      
       goto 50
 c ......................................................................
 c
@@ -1842,7 +1862,7 @@ c ...
      .          ,ia(i_sedgeF)
      .          ,ia(i_e),ia(i_ls),ia(i_ie),ia(i_nelcon),ia(i_pedgeF)
      .          ,ia(i_ix),numel,ndm,nen,nen,1,ndfF,2,1,1)
-c
+c 
       call gform(ia(i_u2),ia(i_gradU2),ia(i_fluxlU2),ia(i_x)
      .          ,ia(i_sedgeF)
      .          ,ia(i_e),ia(i_ls),ia(i_ie),ia(i_nelcon),ia(i_pedgeF)
@@ -2018,7 +2038,6 @@ c ... Macro-comando: PDSMAGO
 c
 c ......................................................................
  6000 continue
-c ...
       print*, 'Macro PDSMAGO'
       call uformnode(ia(i_un),ia(i_cs),ddum,ddum,ia(i_x),ia(i_mdf)
      .              ,ia(i_ix),ia(i_md),nnode,numel,ndm,nen,1,2)
@@ -2042,7 +2061,6 @@ c ... Macro-comando: PYPLUS
 c
 c ......................................................................
  6100 continue
-c ...
       print*, 'Macro PYPLUS'
       call uformnode(ia(i_un),ia(i_yPlus),ddum,ddum,ia(i_x),ia(i_mdf)
      .              ,ia(i_ix),ia(i_md),nnode,numel,ndm,nen,1,2)
@@ -2062,11 +2080,89 @@ c ......................................................................
 c
 c ......................................................................
 c
-c ... Macro-comando:         
+c ... Macro-comando: PDSTRESS        
 c
 c ......................................................................
  6200 continue
+      print*, 'Macro PDSTRESS'
+c ...
+      call guess(ia(i_u1),ia(i_u2),ia(i_w),numel,ndfF-1)
+c ... reconstrucao de gradiante u1
+      call gform(ia(i_u1),ia(i_gradU1),ia(i_fluxlU1),ia(i_x)
+     .          ,ia(i_sedgeF)
+     .          ,ia(i_e),ia(i_ls),ia(i_ie),ia(i_nelcon),ia(i_pedgeF)
+     .          ,ia(i_ix),numel,ndm,nen,nen,1,ndfF,2,1,1)
+c ... reconstrucao de gradiante u2
+      call gform(ia(i_u2),ia(i_gradU2),ia(i_fluxlU2),ia(i_x)
+     .          ,ia(i_sedgeF)
+     .          ,ia(i_e),ia(i_ls),ia(i_ie),ia(i_nelcon),ia(i_pedgeF)
+     .          ,ia(i_ix),numel,ndm,nen,nen,1,ndfF,2,2,1)
+c ......................................................................
+c
+c ...
+      i_nn        = alloc_8('nn      ',4,numel)
+      call devitoricStress(ia(i_gradU1),ia(i_gradU2),ia(i_nn),numel,ndm)
+c    
+      call uformnode(ia(i_un),ia(i_nn),ddum,ddum,ia(i_x),ia(i_mdf)
+     .              ,ia(i_ix),ia(i_md),nnode,numel,ndm,nen,ndm*ndm,2)
+c ......................................................................
+c
+c ...
+      fileout     = name(prename,istep,59)
+      nCell = 'elDstress'
+      nNod  = 'noDstress'
+      call write_res_vtk(ia(i_ix),ia(i_x),ia(i_nn),ia(i_un)
+     .                  ,nnode   ,numel
+     .                  ,ndm     ,nen    ,ndm*ndm ,fileout
+     .                  ,nCell   ,nNod   ,bvtk    ,4 
+     .                  ,t       ,istep  ,nout) 
+      i_nn        = dealloc('nn      ')
+c ......................................................................
+      goto 50
+c ......................................................................
+c
+c ......................................................................
+c
+c ... Macro-comando: PSTRESS        
+c
+c ......................................................................
  6300 continue
+      print*, 'Macro PSTRESS'
+c ...
+      call guess(ia(i_u1),ia(i_u2),ia(i_w),numel,ndfF-1)
+c ... reconstrucao de gradiante u1
+      call gform(ia(i_u1),ia(i_gradU1),ia(i_fluxlU1),ia(i_x)
+     .          ,ia(i_sedgeF)
+     .          ,ia(i_e),ia(i_ls),ia(i_ie),ia(i_nelcon),ia(i_pedgeF)
+     .          ,ia(i_ix),numel,ndm,nen,nen,1,ndfF,2,1,1)
+c ... reconstrucao de gradiante u2
+      call gform(ia(i_u2),ia(i_gradU2),ia(i_fluxlU2),ia(i_x)
+     .          ,ia(i_sedgeF)
+     .          ,ia(i_e),ia(i_ls),ia(i_ie),ia(i_nelcon),ia(i_pedgeF)
+     .          ,ia(i_ix),numel,ndm,nen,nen,1,ndfF,2,2,1)
+c ......................................................................
+c
+c ...
+      i_nn        = alloc_8('nn      ',4,numel)
+      call stress(ia(i_p),ia(i_gradU1),ia(i_gradU2),ia(i_nn),numel,ndm)
+c    
+      call uformnode(ia(i_un),ia(i_nn),ddum,ddum,ia(i_x),ia(i_mdf)
+     .              ,ia(i_ix),ia(i_md),nnode,numel,ndm,nen,ndm*ndm,2)
+c ......................................................................
+c
+c ...
+      fileout     = name(prename,istep,60)
+      nCell = 'elStress'
+      nNod  = 'noStress'
+      call write_res_vtk(ia(i_ix),ia(i_x),ia(i_nn),ia(i_un)
+     .                  ,nnode   ,numel
+     .                  ,ndm     ,nen    ,ndm*ndm ,fileout
+     .                  ,nCell   ,nNod   ,bvtk    ,4 
+     .                  ,t       ,istep  ,nout) 
+      i_nn        = dealloc('nn      ')
+c ......................................................................
+      goto 50
+c ......................................................................
  6400 continue
  6500 continue
  6600 continue

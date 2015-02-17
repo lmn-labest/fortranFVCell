@@ -127,7 +127,7 @@ c ... cell 2D simple - incompressivel (Edge-based-GGl-TVD)
       elseif(type .eq.  63 .or. type .eq. 65) then
         if( lib .eq. 1) then
           call cell_si_eb_i_ggl(a,x,u,u0,u1,w,d,grad,grad1,grad2
-     .                         ,div,iM,fluxl,k,sp,p,sedge,dt
+     .                         ,iM,fluxl,k,sp,p,sedge,dt
      .                         ,pedge,viz,nshared,ndm,iws,iws1,nel,sn
      .                         ,acod,Mp,bs)
         elseif(lib .eq.2) then
@@ -141,11 +141,11 @@ c ... cell 2D simple - incompressivel (Edge-based-GGl-TVD)
         endif 
 c .....................................................................
 c
-c ... cell 2D simple - incompressivel (Wall-Model-Edge-based-GGl-TVD)
+c ... cell 2D simple - incompressivel-LES (Wall-Model-Edge-based-GGl-TVD)
       elseif(type .eq.  73 .or. type .eq. 75) then
         if( lib .eq. 1) then
           call cell_si_wm_les_eb_i_ggl(a,x,u,u0,u1,w,d,grad,grad1,grad2
-     .                                ,div,iM,fluxl,k,sp,p,sedge,dt
+     .                                ,iM,fluxl,k,sp,p,sedge,dt
      .                                ,pedge,viz,nshared,ndm,iws,iws1
      .                                ,nel,sn,acod,Mp,eddyVisc,bs)
         elseif(lib .eq.2) then
@@ -571,6 +571,8 @@ c **********************************************************************
       return
       end
 c **********************************************************************
+c
+c **********************************************************************
 c * SETCELL: varais que depende do numero de faces                     *
 c * -------------------------------------------------------------------*
 c * Parametros de entrada:                                             *
@@ -845,18 +847,87 @@ c
 c **********************************************************************
 c * VORT2D : calculo da vorticidade de um campo vetorial               *
 c * ------------------------------------------------------------------ *
+c * Parametros de entrada:                                             *
+c * -------------------------------------------------------------------*
+c * gradU1       - gradiente da variavel u1                            *
+c * gradU2       - gradiente da variavel u2                            *
+c * rot          - indefinido                                          *
+c * n            - dimensoes do vetores                                *
+c * ndm          - numero dimensoes espaciais                          *
+c * -------------------------------------------------------------------*
+c * Parmetros de saida:                                                *
+c * -------------------------------------------------------------------*
+c * rot          - rotacional                                          *
 c **********************************************************************
-      subroutine vort2D(gradU1,gradU2,rot,numel,ndm)
+      subroutine vort2D(gradU1,gradU2,rot,n,ndm)
       implicit none
       real*8 gradU1(ndm,*),gradU2(ndm,*),rot(*)
-      integer ndm,numel,i
-      do i = 1, numel
+      integer ndm,n,i
+      do i = 1, n
         rot(i) = gradU2(1,i) - gradU1(2,i)
       enddo
       return
       end
 c ***********************************************************************   
-
+c
+c **********************************************************************
+c * DEVITORICSTRESS : calculo do tensor desviador                      *
+c * ------------------------------------------------------------------ *
+c * Parametros de entrada:                                             *
+c * -------------------------------------------------------------------*
+c * gradU1       - gradiente da variavel u1                            *
+c * gradU2       - gradiente da variavel u2                            *
+c * dStress      - indefinido                                          *
+c * n            - dimensoes do vetores                                *
+c * ndm          - numero dimensoes espaciais                          *
+c * -------------------------------------------------------------------*
+c * Parmetros de saida:                                                *
+c * -------------------------------------------------------------------*
+c * dStress      - tensor desviador das tensoes                        *
+c **********************************************************************
+      subroutine devitoricStress(gradU1,gradU2,dStress,n,ndm)
+      implicit none
+      real*8 gradU1(ndm,*),gradU2(ndm,*),dStress(ndm*ndm,*)
+      integer ndm,n,i
+      do i = 1, n
+        dStress(1,i) = gradU1(1,i)                    ! du1/dx1
+        dStress(2,i) = 0.5d0*(gradU1(2,i)+gradU2(1,i))!du1/dx2+du2/dx1
+        dStress(3,i) = gradU2(2,i)                    ! du2/dx2 
+        dStress(4,i) = dStress(2,i)                   !du2/dx1+du1/dx2
+      enddo
+      return
+      end
+c ***********************************************************************   
+c
+c **********************************************************************
+c * STRESS : calculo do tensor                                         *
+c * ------------------------------------------------------------------ *
+c * Parametros de entrada:                                             *
+c * -------------------------------------------------------------------*
+c * p            - campo de pressao                                    *
+c * gradU1       - gradiente da variavel u1                            *
+c * gradU2       - gradiente da variavel u2                            *
+c * s            - indefinido                                          *
+c * n            - dimensoes do vetores                                *
+c * ndm          - numero dimensoes espaciais                          *
+c * -------------------------------------------------------------------*
+c * Parmetros de saida:                                                *
+c * -------------------------------------------------------------------*
+c * s            - tensor das tensoes                                  *
+c **********************************************************************
+      subroutine stress(p,gradU1,gradU2,s,n,ndm)
+      implicit none
+      real*8 gradU1(ndm,*),gradU2(ndm,*),s(ndm*ndm,*),p(*)
+      integer ndm,n,i
+      do i = 1, n
+        s(1,i) = p(i) + gradU1(1,i)             !p + du1/dx1
+        s(2,i) = 0.5d0*(gradU1(2,i)+gradU2(1,i))!du1/dx2+du2/dx1
+        s(3,i) = p(i) + gradU2(2,i)             !p + du2/dx2 
+        s(4,i) = s(2,i)                         !du2/dx1+du1/dx2
+      enddo
+      return
+      end
+c ***********************************************************************   
 c **********************************************************************
 c * WALLMODEL : Modelo de parede                                       *
 c * ------------------------------------------------------------------ *
@@ -876,38 +947,165 @@ c * yPLus        - distancia nao dimensional da parede                 *
 c * stressW      - tensao na parede                                    *
 c **********************************************************************
       subroutine wallModel(yPlus,stressW,viscosity,specificMass,vt,dy
-     .                    ,nel)
+     .                    ,nel,codWall)
       implicit none
       real*8 stressW,stressW0
-      real*8 fu,uPlus,yPlus
+      real*8 temp1,temp2,temp3,onePlusB
+      real*8 yPlus3,yPlus4
+      real*8 uPlusL,uPlusT
+      real*8 fu0,fu,uPlus,yPlus,gama,gamai
       real*8 viscosity,vt,dy,specificMass
+      real*8 vonKarmani,Ei
       real*8 , parameter :: vonKarman = 0.4187d0
+      real*8 , parameter :: r16       = 0.16666666666666d0
       real*8 , parameter :: E         = 9.793d0
-      integer, parameter :: maxIt     = 100
-      integer i,nel
+c ... Kader - 1981 
+      real*8 , parameter :: aKader    = 0.01d0 
+      real*8 , parameter :: bKader    = 5.0d0   
+      real*8 , parameter :: aWerner   = 8.3d0 
+      real*8 , parameter :: bWerner   = 0.142857143d0   
+      integer, parameter :: maxIt     =  5000
+      integer i,nel,codWall
+c ... universal near wall model
+      if( codWall .eq. 1 ) then
 c ... wall shear stress (viscosidade)
-      stressW  =  viscosity*vt/dy
-      do i = 1, maxIt
+        vonKarmani = 1.0d0/vonKarman
+        stressW  =  viscosity*vt/dy
+        do i = 1, maxIt
 c ... friction velocity
-        fu     = dsqrt(stressW/specificMass)
+          fu     = dsqrt(stressW/specificMass)
 c ...
-        yPlus = specificMass*fu*dy/viscosity
+          yPlus = specificMass*fu*dy/viscosity
 c .....................................................................
 c 
 c ... 
-        if( yPlus .lt. 11.81d0) then
-          uPlus = yPlus
+          if( yPlus .le. 11.81d0) then
+            uPlus = yPlus
+          else 
+            uPlus = vonKarmani*dlog(E*yPlus)
+          endif
+          stressW0 = stressW
+          stressW  = specificMass*(vt/uPLus)*(vt/uPLus)          
+          if(dabs(stressW-stressW0) .lt. 1.0d-7) goto 100 
+        enddo
+        print*,'Funcao de parede nao convergiu !!!'
+        print*,'Tipo : ',codWall                    
+        print*,i,dabs(stressW-stressW0),nel
+        stop
+  100   continue
+c .....................................................................
+c
+c ... universal near wall model kader 1981
+      else if( codWall .eq. 2 ) then
+        vonKarmani = 1.0d0/vonKarman
+c ... wall shear stress (viscosidade)
+        stressW  =  viscosity*vt/dy
+c ... friction velocity(chute inicial)
+        fu       = dsqrt(stressW/specificMass)
+c .....................................................................
+        do i = 1, maxIt
+c ...
+          yPlus    = specificMass*fu*dy/viscosity
+          uPlus    = vt/fu
+c ... 
+          onePlusB = 1.0d0 + bKader*yPlus
+          yPlus3   = yPlus*yPlus*yPlus
+          yPlus4   = yPlus3*yPlus
+c ... u+ laminar (linear)
+          uPlusL   = yPlus
+c ... u+ trubulento (log)
+          uPlusT   = vonKarmani*dlog(E*yPlus)
+c ... parametro T = -(a(y+)**4)/(1+by+)
+          gama  = - (aKader*yPlus4) / onePlusB
+          gamai = 1.0d0/gama
+c ... derivada dT/dy+
+          temp1 = aKader*bKader*yPlus4-4.0d0*aKader*yPlus3*onePlusB
+          temp1 = temp1/(onePlusB*onePlusB)
+c ... f = e(T)*(y+) + e(1/T)*(1/k)ln(Ey+) - u+
+          temp2 = dexp(gama)*uPlusL + dexp(gamai)*uPlusT - uPlus
+c ... derivada de f
+          temp3  = (temp1*yPlus+1.0d0)*dexp(gama)*yPlus   
+     .           + vonKarmani*dexp(gamai)*( 1.0d0 
+     .           - (temp1/(gama*gama))*yPlus*dlog(E*yPLus))
+     .           + uPlus
+c .....................................................................
+c
+c ...
+c         print*,yPlus
+          fu     = fu*(1.0d0- temp2/temp3)
+c .....................................................................
+          if(dabs(temp2/temp3) .lt. 1.0d-7) goto 200 
+        enddo
+        print*,'Funcao de parede nao convergiu !!!'
+        print*,'Tipo : ',codWall                    
+        print*,i,dabs(temp2/temp3),nel
+        stop
+  200   continue
+        yPlus = specificMass*fu*dy/viscosity
+        stressW  =  specificMass*fu*fu
+c .....................................................................
+c
+c ... The Werner-Wengle - 1993
+      else if( codWall .eq. 3) then
+        gama = 2.0d0/(1.0d0-bWerner) 
+        temp1 = 0.5d0*(viscosity/(specificMass*dy))
+        temp1 = temp1*(aWerner**gama)
+        if( vt .le. temp1) then
+          stressW = (2.0d0*viscosity*vt)/dy
         else
-          uPlus = (1.0d0/vonKarman)*dlog(E*yPlus)  
-        endif
-        stressW0 = stressW
-        stressW  = specificMass*(vt/uPLus)*(vt/uPLus)
-        if(dabs(stressW-stressW0) .lt. 1.0d-14) goto 100 
-      enddo
-  100 continue
-c     if(yPlus .gt. 11.81d0) then
-c       print*,stressW,stressW0,uPlus,yPlus,i,dy
-c     endif
+          temp3    = viscosity/(specificMass*dy)
+          onePlusB = 1.0d0 + bwerner
+c
+          gama     = onePlusB /(1.0d0 - aWerner)
+          temp1    = 0.5d0*(1.0d0-bWerner)*(aWerner**gama)
+          temp1    = temp1*temp3**(onePlusB) 
+c
+          temp2    = (onePlusB/aWerner)*(temp3**bwerner)*vt
+c 
+          temp2    = (temp1+temp2)**(2.0d0/onePlusB)
+c
+          stressW  =  specificMass*temp2       
+        endif 
+c ... friction velocity
+        fu     = dsqrt(stressW/specificMass)
+c ...
+        yPlus  = specificMass*fu*dy/viscosity 
+c .....................................................................
+c
+c ... Spaldings law - Villiers - 2006
+      else if( codWall .eq. 4) then
+        Ei = 1.0d0/E
+        stressW  =  viscosity*vt/dy
+        fu       = dsqrt(stressW/specificMass)
+        do i = 1, maxIt
+          fu0    = fu 
+c                              
+          yPlus = specificMass*fu*dy/viscosity
+          uPlus = vt/fu
+c ... friction velocity
+          gama   = vonKarman*uPlus
+c
+          temp1  = uPlus - yPlus 
+     .           + (Ei)*(dexp(gama) - 1.0d0  
+     .           - 0.5d0*gama*gama - r16*gama*gama*gama)
+c
+          temp2  = -uPlus - yPlus 
+     .           + (Ei)*(-gama*dexp(gama) + gama  
+     .           + gama*gama + 0.5d0*gama*gama*gama)
+          fu     = fu*(1.0d0 - temp1/temp2)
+          if(dabs(temp1/temp2) .lt. 1.0d-7) goto 300 
+        enddo
+        print*,'Funcao de parede nao convergiu !!!'
+        print*,'Tipo : ',codWall                    
+        print*,i,dabs(fu-fu0),nel
+        stop
+  300   continue
+        yPlus = specificMass*fu*dy/viscosity
+        stressW  =  specificMass*fu*fu
+      endif
+c ......................................................................
+c
+c ...
       return
       end
 c ***********************************************************************   

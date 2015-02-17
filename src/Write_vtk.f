@@ -26,8 +26,11 @@ c * ----------------------------------------------------------------- *
 c * Parametros de saida :                                             *
 c * ----------------------------------------------------------------- *
 c *********************************************************************
-      subroutine write_res_vtk(el,x,u,un,nnode,numel,ndm,nen,ndf,filein
-     .                        ,nCell,nNod,bvtk,cod,t,istep,nout)
+      subroutine write_res_vtk(el   ,x    ,u   ,un    
+     .                        ,nnode,numel
+     .                        ,ndm  ,nen  ,ndf ,filein
+     .                        ,nCell,nNod ,bvtk ,cod  
+     .                        ,t    ,istep,nout)
       use Malloc
       implicit none
       character nCell*30,nNod*30 
@@ -114,17 +117,6 @@ c ...
       endif
 c ... gradiente por celula      
       if( cod .eq. 5) then
-c ... erro da funcao exata     
-c        write(aux1,'(30a)')"Error:GradEl" 
-c        i_p = alloc_8('error   ', 1,numel)
-c        gdl  = 1  
-c        cod1 = 1
-c        cod2 = 3
-c        call errosol(u,ia(i_p),x,el,numel,nen,ndm,ndm,.false.)
-c        call cell_prop_vtk(idum,fdum,ia(i_p),numel,aux1,ndm,gdl,cod1
-c     .                    ,cod2,bvtk,nout)
-c        i_p = dealloc('error   ')
-c ...        
         write(aux1,'(30a)')nCell
         gdl  = ndm
         cod1 = 2
@@ -189,8 +181,18 @@ c ... cod = 1 variaveis interias
       call pont_prop_vtk(ia(i_p),fdum,ddum,nnode,aux1,ndm,gdl,cod1,cod2
      .                    ,bvtk,nout)
       i_p = dealloc('pi      ')
+c ...     
+      if( cod .eq. 3) then
+        call point_data_vtk(nnode,bvtk,nout)
+        write(aux1,'(30a)')"Derivadas_Temporais"
+        gdl  = ndf
+        cod1 = 1
+        cod2 = 3
+        call pont_prop_vtk(idum,fdum,u,nnode,aux1,ndm,gdl,cod1,cod2
+     .                    ,bvtk,nout)
+c .....................................................................
 c ...      
-      if ( cod .eq. 4) then
+      else if ( cod .eq. 4) then
         write(aux1,'(30a)') nNod 
         gdl  = ndf
         cod1 = 1
@@ -236,17 +238,6 @@ c ...
         cod1 = 2
         cod2 = 3
         call pont_prop_vtk(idum,fdum,un,nnode,aux1,ndm,gdl,cod1,cod2
-     .                    ,bvtk,nout)
-c .....................................................................
-c
-c ...     
-      elseif( cod .eq. 3) then
-        call point_data_vtk(nnode,bvtk,nout)
-        write(aux1,'(30a)')"Derivadas_Temporais"
-        gdl  = ndf
-        cod1 = 1
-        cod2 = 3
-        call pont_prop_vtk(idum,fdum,u,nnode,aux1,ndm,gdl,cod1,cod2
      .                    ,bvtk,nout)
       endif
 c .....................................................................

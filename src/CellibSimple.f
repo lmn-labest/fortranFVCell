@@ -556,7 +556,6 @@ c * d      - nao definidp                                              *
 c * grad1  - gradiente u(iws2) reconstruido da celula                  *
 c * grad2  - gradiente u(2 ou 1) reconstruido da celula                *
 c * gradP  - gradiente p  reconstruido da celula                       *
-c * div    - divergente da velocidade                                  *
 c * fluxl  - limitador de fluxo na celulas                             *
 c * k      - propriedades da celula e do seus vizinhos                 *
 c * rm     - nao definido                                              *
@@ -590,7 +589,7 @@ c * grad1   - gradiente (GREEN GAUSS LINEAR)                            *
 c * -------------------------------------------------------------------*
 c **********************************************************************
       subroutine cell_si_eb_i_ggl(a,x,u,u0,u1,w,d,grad1,grad2,gradP
-     .                           ,div,iM,fluxl,k,rm,p,sedge,dt,pedge
+     .                           ,iM,fluxl,k,rm,p,sedge,dt,pedge
      .                           ,viz,nshared,ndm,iws1,iws2,nel,sn
      .                           ,acod,Mp,bs)
       implicit none
@@ -603,7 +602,7 @@ c **********************************************************************
       real*8 sedge(3,nshared+1),ksi(3,4),eta(3,4),n(3,4),meta(4)
       real*8 mksi(4),area(5),ap,u0(5),u1(5)
       real*8 u(5),ca(4),alpha,k(10,*),xm(3,4),grad1(ndm,*)
-      real*8 eps,cfl,re,ug(4),xcg(3,4),kf,div(5)
+      real*8 eps,cfl,re,ug(4),xcg(3,4),kf
       real*8 gradP(ndm,*),grad2(ndm,*)
       real*8 pf,p1,p2,pface,mKsiF(4),aNb
       integer pedge(*),viz(*),viznel,iws1,iws2,nel
@@ -1069,7 +1068,6 @@ c * d        - nao definido                                            *
 c * grad1    - gradiente u(iws2) reconstruido da celula                *
 c * grad2    - gradiente u(2 ou 1) reconstruido da celula              *
 c * gradP    - gradiente p  reconstruido da celula                     *
-c * div      - divergente da velocidade                                *
 c * fluxl    - limitador de fluxo na celulas                           *
 c * k        - propriedades da celula e do seus vizinhos               *
 c * rm       - nao definido                                            *
@@ -1104,12 +1102,13 @@ c * grad1   - gradiente (GREEN GAUSS LINEAR)                            *
 c * -------------------------------------------------------------------*
 c **********************************************************************
       subroutine cell_si_wm_les_eb_i_ggl(a,x,u,u0,u1,w,d,grad1,grad2
-     .                                  ,gradP,div,iM,fluxl,k,rm,p,sedge
+     .                                  ,gradP,iM,fluxl,k,rm,p,sedge
      .                                  ,dt,pedge,viz,nshared,ndm
      .                                  ,iws1,iws2,nel,sn
      .                                  ,acod,mP,eddyVisc,bs)
       implicit none
       include 'simple.fi'
+      include 'les.fi'
       real*8 areacell,uf,gf(2),gfn,gfk,w(ndm,*),p,wf(ndm),wfn,cv,cvc
       real*8 r,limit,du,rof,gpk,vm,m,cc,dt,df(3,4)
       real*8 fluxl(nshared+1),km(3,4),d(2,nshared+1),mP(*)
@@ -1120,7 +1119,7 @@ c **********************************************************************
       real*8 u(5),u0(5),u1(5)
       real*8 stressW(4),yPLus(4),yPLusMax
       real*8 ca(4),alpha,k(10,*),xm(3,4)
-      real*8 eps,cfl,re,ug(4),xcg(3,4),kf,div(5)
+      real*8 eps,cfl,re,ug(4),xcg(3,4),kf
       real*8 gradP(ndm,*),grad2(ndm,*),grad1(ndm,*)
       real*8 pf,p1,p2,pface,mKsiF(4),aNb
 c ... LES
@@ -1136,12 +1135,11 @@ c ... LES
       real*8,parameter :: VanDriest = 26.d0
       real*8,parameter :: vonKarman = 0.4187d0
       real*8 s11,s22,s12,g11,g12,g21,g22
-      integer iCodLes  
       logical wall
 c .......................................................................
       integer pedge(*),viz(*),viznel,iws1,iws2,nel
       integer ndm,nshared,i,j,icod,acod,idcell,sn(2,*),l
-      real*8 cp,const,ZERO
+      real*8  const,ZERO
       logical bs
       parameter (ZERO =  1.0d-60)
       parameter (eps   = 1.0d-14)
@@ -1155,7 +1153,6 @@ c ... 5 - Mid - Mod - TVD
 c ... 6 - MUSCL - TVD
 c ... 7 - OSHER - TVD
       icod   = 1 
-      iCodLes= 1
       idcell = nshared + 1
       wall   = .false.
 c .....................................................................
@@ -1170,38 +1167,40 @@ c ... propriedeade da celula
       specificMassA=  k(2,idCell)
       cc           =  k(6,idCell)
       icod         =  k(7,idCell)
-      iCodLes      =  k(8,idCell)
       vm           = dsqrt(w(1,idCell)*w(1,idCell) 
      .                   + w(2,idCell)*w(2,idCell))
 c .....................................................................
 c
 c ... calculo de yPLus e Tensao da parede
-      do i = 1, nshared
-        viznel = viz(i)
-        yPLus(i)   = 0.0d0
-        stressW(i) = 0.0d0
+      yPLus(1:nshared)   = 0.0d0
+      stressW(1:nshared) = 0.0d0
+      yPLusMax           = 0.0d0
+      dMin               = 0.0d0
+      if( iws1  .eq. 1 .or. iws1 .eq. 8 ) then 
+        do i = 1, nshared
+          viznel = viz(i)
 c ...
-        if( viznel .lt. 0) then
-          if(pedge(i) .eq. 0 ) then
-            wall = .true.
+          if( viznel .lt. 0) then
+            if(pedge(i) .eq. 0 ) then
+              wall = .true.
 c ... velocidade tangencial a face
-            wfn = dabs(w(1,idCell)*eta(1,i) + w(2,idCell)*eta(2,i))
-            if(wfn .ne. 0.0d0) then
-              call wallModel(yPlus(i)     ,stressW(i),viscosity
-     .                      ,specificMassA,wfn      ,ca(i),nel)
+              wfn = dabs(w(1,idCell)*eta(1,i) + w(2,idCell)*eta(2,i))
+              if(wfn .ne. 0.0d0) then
+                call wallModel(yPlus(i)     ,stressW(i),viscosity
+     .                        ,specificMassA,wfn,ca(i),nel,wallModelF)
+              endif
             endif
           endif
-        endif
-
 c .....................................................................
-      enddo
+        enddo
 c ...
-      yPlusMax = yPlus(1)
-      dMin     =    ca(1) 
-      do i = 2, nshared
-        yPlusMax = max(yPlusMax,yPlus(i))
-        dMin     = min(dMin    ,   ca(i)) 
-      enddo
+        yPlusMax = yPlus(1)
+        dMin     =    ca(1) 
+        do i = 2, nshared
+          yPlusMax = max(yPlusMax,yPlus(i))
+          dMin     = min(dMin    ,   ca(i)) 
+        enddo
+      endif
 c .....................................................................
 c
 c ...
@@ -1290,20 +1289,15 @@ c .....................................................................
 c
 c ... parade  
           if(pedge(i) .eq. 0 ) then
-            if( yPlus(i) .lt.  11.81d0) then
-               ap = viscosity*meta(i)/ca(i)
-               sp = sp + ap
-            else
 c ... sinal  
-              wfn = w(1,idCell)*eta(1,i) + w(2,idCell)*eta(2,i)
-              if(wfn .gt. 0.0d0) then
-                stressW(i) = -stressW(i)*eta(iws2,i)*meta(i)
-              else
-                stressW(i) =  stressW(i)*eta(iws2,i)*meta(i)
-              endif
-c             print*,yPlus,stressW,w(iws2,idCell),wfn,eta(iws2,i),nel
-              p  = p + stressW(i)
+            wfn = w(1,idCell)*eta(1,i) + w(2,idCell)*eta(2,i)
+            if(wfn .gt. 0.0d0) then
+              stressW(i) = -stressW(i)*eta(iws2,i)*meta(i)
+            else
+              stressW(i) =  stressW(i)*eta(iws2,i)*meta(i)
             endif
+c             print*,yPlus,stressW,w(iws2,idCell),wfn,eta(iws2,i),nel
+            p  = p + stressW(i)
 c ... parade movel 
           else if(pedge(i) .eq. 1) then
             ap = viscosity*meta(i)/ca(i)
@@ -1682,7 +1676,7 @@ c     area(1) = areacell(eta,acod)
 c .....................................................................
 c
 c ... smagorinsky (grad1 -> grad2; grad2 -> gradU2)
-      if(iCodLes .eq. 1 .or. iCodLes .eq. 0) then 
+      if(lesModel .eq. 1 .or. lesModel .eq. 0) then 
 c ... |S|
         s11     =   grad1(1,idCell)                 ! du1/dx1                 
         s22     =   grad2(2,idCell)                 ! du2/dx2
@@ -1702,7 +1696,7 @@ c ... viscosidade turbulenta
 c .....................................................................
 c
 c ... Wall-Adpating Local Eddy-Viscosity (WALE) model
-      elseif(iCodLes .eq. 2) then
+      elseif(lesModel .eq. 2) then
 c ... S:S - contracao do tensor de tensoes
         s11     =   grad1(1,idCell)                 ! du1/dx1                 
         s22     =   grad2(2,idCell)                 ! du2/dx2
@@ -1742,7 +1736,7 @@ c        print*,nel,modS,modSd,g11,g22,g12,g21
 c .....................................................................
 c 
 c ... Vreman's Model                                   
-      elseif(iCodLes .eq. 3) then
+      elseif(lesModel .eq. 3) then
 c ... filtro*filtro
         filtro = area(idCell)
 c ... alpha
@@ -1769,7 +1763,7 @@ c       print*,nel, eddyVisc(idCell)
 c ......................................................................
 c
 c ... germando - lilly                                
-      elseif(iCodLes .eq. 4) then
+      elseif(lesModel .eq. 4) then
         volW   = area(idCell)
         volWt  = volW           
 c ... termo |S|Sij para o filtro de teste

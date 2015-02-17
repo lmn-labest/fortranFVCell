@@ -80,6 +80,7 @@ c ======================================================================
       end
 c ======================================================================
 c
+c **********************************************************************
       subroutine elm_vtk(nos,numel,nen,bvtk,nfile)
 c **********************************************************************
 c * elm_vtk: escreve elementos nos formato vtk com os seus respectivos *
@@ -319,6 +320,7 @@ c **********************************************************************
       integer iprop(gdl,*),idum
       Real*4 fprop(gdl,*),fdum
       Real*8 dprop(gdl,*),ddum
+      character str1*10
       character buffer*1024,lf*1,cname*15
       logical bvtk
       lf = char(10)
@@ -330,37 +332,40 @@ c ... campo escalar
         if(cod1.eq.1) then
 c .. escalar int BINARY     
           if(cod2.eq.1)then
-            buffer =' SCALARS '//cname//' int'//lf
+            write(str1(1:10),'(i10)') gdl    
+            buffer = ' SCALARS '//cname//' int '//str1//lf
             write(nfile)trim(buffer)
             buffer =' LOOKUP_TABLE '//'default '//lf
             write(nfile)trim(buffer)
             do i=1,nnode
-              write(nfile)iprop(1,i)
+              write(nfile)(iprop(j,i),j=1,gdl)
             enddo
 c ... escalar float BINARY         
           elseif(cod2.eq.2)then  
-            buffer = lf//'SCALARS '//cname//' float'//lf
+            write(str1(1:10),'(i10)') gdl    
+            buffer = ' SCALARS '//cname//' float  '//str1//lf
             write(nfile)trim(buffer)
             buffer = lf//'LOOKUP_TABLE '//'default '//lf
             write(nfile)trim(buffer)
             do i=1,nnode
-              write(nfile)fprop(1,i)
+              write(nfile)(fprop(j,i),j=1,gdl)
             enddo
 c ... escalardouble BINARY         
           elseif(cod2.eq.3)then  
-            buffer = lf//'SCALARS '//cname//' double'//lf
+            write(str1(1:10),'(i10)') gdl    
+            buffer = ' SCALARS '//cname//' double '//str1//lf
             write(nfile)trim(buffer)
             buffer = lf//'LOOKUP_TABLE '//'default '//lf
             write(nfile)trim(buffer)
             do i=1,nnode
-              write(nfile)dprop(1,i)
+              write(nfile)(dprop(j,i),j=1,gdl)
             enddo
           endif  
 c ......................................................................
 c
 c ... campo vetorial BINARY
         elseif(cod1.eq.2) then
-c .. escalar int BINARY     
+c .. vector int BINARY     
           if(cod2.eq.1)then
             buffer =' VECTORS '//cname//' int'//lf
             write(nfile)trim(buffer)
@@ -373,7 +378,7 @@ c .. escalar int BINARY
                 write(nfile)(iprop(j,i),j=1,gdl)
               endif
             enddo
-c ... escalar float BINARY         
+c ... vector float BINARY         
           elseif(cod2.eq.2)then  
             buffer =' VECTORS '//cname//' float'//lf
             write(nfile)trim(buffer)
@@ -386,7 +391,7 @@ c ... escalar float BINARY
                 write(nfile)(fprop(j,i),j=1,gdl)
               endif
             enddo
-c ... escalardouble BINARY         
+c ... vector double BINARY         
           elseif(cod2.eq.3)then  
             buffer =' VECTORS '//cname//' double'//lf
             write(nfile)trim(buffer)
@@ -405,8 +410,18 @@ c ......................................................................
 c 
 c ... campo tensorial BINARY
         elseif(cod1.eq.3) then
-          print*,'\nnao implementado ',cod1
-        endif
+c ... tensor int BINARY         
+          elseif(cod2.eq.1)then
+c ... tensor float BINARY         
+          elseif(cod2.eq.2)then  
+c ... tensor double BINARY         
+          elseif(cod2.eq.3)then  
+            buffer =' TENSORS '//cname//' double'//lf
+            write(nfile)trim(buffer)
+            do i=1,nnode
+              write(nfile)(dprop(j,i),j=1,gdl)
+            enddo 
+          endif  
 c ......................................................................
 c
 c ======================================================================
@@ -417,24 +432,27 @@ c ... campo escalar ASCII
         if(cod1.eq.1) then
 c .. escalar int ASCII 
           if(cod2.eq.1)then
-            write(nfile,'(a,15a,a)')'SCALARS ',cname, 'int'
-            write(nfile,'(a,a)')'LOOKUP_TABLE ','DEFAULT '
-            do i=1,nnode
-              write(nfile,'(i10)') iprop(1,i)
+            write(nfile,'(a,1x,a15,1x,a8,1x,i3)')'SCALARS'
+     .           ,cname,'int    ',gdl
+            write(nfile,'(a)')'LOOKUP_TABLE default'
+            do i = 1, nnode
+              write(nfile,'(99i10)')(iprop(j,i),j=1,gdl) 
             enddo
 c .. escalar float ASCII 
           elseif(cod2.eq.2)then  
-            write(nfile,'(a,15a,a)')'SCALARS ',cname,' float'
-            write(nfile,'(a,a)')'LOOKUP_TABLE ','default '
-            do i=1,nnode
-              write(nfile,'(7e15.5e3)') fprop(1,i)
+            write(nfile,'(a,1x,a15,1x,a8,1x,i3)')'SCALARS'
+     .           ,cname,'float  ',gdl
+            write(nfile,'(a)')'LOOKUP_TABLE default'
+            do i = 1, nnode
+               write(nfile,'(99e15.5e3)')(fprop(j,i),j=1,gdl) 
             enddo
 c .. escalar double ASCII 
           elseif(cod2.eq.3)then  
-            write(nfile,'(a,15a,a)')'SCALARS ',cname,' double'
-            write(nfile,'(a,a)')'LOOKUP_TABLE ','default '
-            do i=1,nnode
-              write(nfile,'(7e15.5e3)') dprop(1,i)
+            write(nfile,'(a,1x,a15,1x,a8,1x,i3)')'SCALARS'
+     .           ,cname,'double ',gdl
+            write(nfile,'(a)')'LOOKUP_TABLE default'
+            do i = 1, nnode
+               write(nfile,'(99e15.5e3)')(dprop(j,i),j=1,gdl) 
             enddo
           endif  
 c ......................................................................
@@ -478,7 +496,16 @@ c ......................................................................
 
 c ... campo tensorial ASCII
         elseif(cod1.eq.3) then
-          print*,'\nnao implementado '
+c ... tensor int ASCII          
+          elseif(cod2.eq.1)then
+c ... tensor float ASCII          
+          elseif(cod2.eq.2)then  
+c ... tensor double ASCII          
+          elseif(cod2.eq.3)then  
+            write(nfile,'(a,15a,a)')'TENSORS ',cname, 'double'
+            do i=1,nnode
+              write(nfile,'(9e20.10)')(dprop(j,i),j=1,gdl)
+            enddo 
 c ......................................................................
         endif
       endif  
@@ -527,6 +554,7 @@ c ======================================================================
 c === DADOS          
 c ... VTk BINARY
       if(bvtk)then
+c ... campo escalar binario
         if(cod1.eq.1) then  
 c ... int      
           if(cod2 .eq. 1)then
@@ -559,6 +587,8 @@ c ... double
               write(nfile)(dprop(j,i),j=1,gdl)
             enddo
           endif
+c .....................................................................
+c
 c ... campo vetorial binario          
         else if(cod1.eq.2) then
 c ... int                
@@ -580,11 +610,27 @@ c ... double
               enddo 
             endif
           endif    
+c .....................................................................
+c
+c ... campo tensorial binario
+        else if(cod1.eq.3) then
+c ... int                
+          if(cod2.eq.1) then
+c ... ifloat              
+          elseif(cod2 .eq. 2) then
+c ... double    
+          elseif(cod2 .eq. 3) then
+            buffer =' TENSORS '//cname//' double'//lf
+            write(nfile)trim(buffer)
+            do i=1,numel
+              write(nfile)(dprop(j,i),j=1,gdl),ddum
+            enddo 
+          endif
         endif
 c .....................................................................
 c          
 c ... Vtk ASCII        
-      else 
+      else
 c ... int
         if(cod1.eq.1) then 
           if(cod2 .eq. 1)then
@@ -614,6 +660,8 @@ c              write(nfile,'(f26.10)')dprop(1,i)
                write(nfile,'(99f26.10)')(dprop(j,i),j=1,gdl) 
             enddo
           endif
+c .....................................................................
+c
 c ... campo vetorial ASCII
         elseif(cod1.eq.2) then
 c .. escalar int ASCII 
@@ -633,7 +681,25 @@ c .. escalar double ASCII
               enddo
             endif  
           endif
-        endif  
+c .....................................................................
+c  
+c ... campo tensorial ASCII  
+        else if(cod1.eq.3) then
+c ... int                
+          if(cod2.eq.1) then
+c ... ifloat              
+          elseif(cod2 .eq. 2) then
+c ... double    
+          elseif(cod2 .eq. 3) then
+c           write(nfile,'(a,1x,a15,1x,a8,1x,i3)')'SCALARS'
+c    .           ,cname,'double ',gdl
+c           write(nfile,'(a)')'LOOKUP_TABLE default'
+c           do i=1,numel
+c             write(nfile,'(9e20.10)')(dprop(j,i),j=1,gdl)
+c           enddo 
+          endif
+c ......................................................................
+        endif
 c ......................................................................
       endif  
 c ====================================================================== 

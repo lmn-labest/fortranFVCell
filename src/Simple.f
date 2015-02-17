@@ -180,7 +180,7 @@ c ... variaveis
       real(8) ZERO,kZero
       parameter (ZERO=1.0d-32)
 c ...
-      kZero         = 2
+      kZero         = 1
       ResAbs        = .false.
 c ... tecnica de interpolação de velocidade nas faces (checkerboard problem) 
       intVel        = 5
@@ -255,6 +255,32 @@ c ... F = fontes no volume + Vp*v0
       elmU2Time = get_time() - elmU2Time
 c .....................................................................
 c
+c ... modificacao da pressao: P = P + (1/3)sigmakk                       
+        if(flagTurbulence) then
+          turbLes = get_time() - turbLes
+c 
+          grSimpleTime = get_time() - grSimpleTime
+c         call uformnode(un,u1,ddum,ddum,x,mdf,ix,md,nnode,numel,ndm
+c   .                   ,nen,1,2)
+          call gform(u1,gradU1,fluxlU1,x,sedge,e,ls,ie,nelcon,pedge,ix
+     .              ,numel,ndm,nen,nshared,1,ndf,2,1,1)
+          grSimpleTime = get_time() - grSimpleTime
+c .....................................................................
+c
+c ... recontrucao do gradiente de u2
+          grSimpleTime = get_time() - grSimpleTime
+c         call uformnode(un,u2,ddum,ddum,x,mdf,ix,md,nnode,numel,ndm
+c   .                   ,nen,1,2)
+          call gform(u2,gradU2,fluxlU2,x,sedge,e,ls,ie,nelcon,pedge,ix
+     .              ,numel,ndm,nen,nshared,1,ndf,2,2,1)
+          grSimpleTime = get_time() - grSimpleTime
+c
+          call pressureLes(p    ,gradU1,gradU2  ,eddyVisc
+     .                    ,numel,ndm)
+          turbLes = get_time() - turbLes 
+        endif
+c .....................................................................
+c
 c ... w0 = w(n-1)
       call aequalbVetor(w0,w,numel,ndf-1)
 c .....................................................................
@@ -315,6 +341,18 @@ c ... calculo de divergente
         call divergente(div,gradU1,gradU2,numel,ndf-1)
 c .....................................................................
 c
+c ...   
+        if(flagTurbulence) then
+          turbLes = get_time() - turbLes 
+          call turbulenceLes(w    ,gradU1,gradU2  ,x   ,eddyVisc
+     .                      ,cs ,yPlus                               
+     .                      ,sedge,e  ,     ie, nelcon ,pedge ,ix
+     .                      ,numel,ndm,   nen,nshared,ndf
+     .                      ,nshared,8,0,1)
+          turbLes = get_time() - turbLes 
+        endif
+c .....................................................................
+c
 c ... recontrucao do gradiente da pressao
         grSimpleTime = get_time() - grSimpleTime 
 c       call uformnode(un,p,ddum,ddum,x,mdf,ix,md,nnode,numel,ndm
@@ -324,17 +362,6 @@ c   .                 ,nen,1,2)
         grSimpleTime = get_time() - grSimpleTime
 c .....................................................................
 c
-c ...   
-        if(flagTurbulence) then
-          turbLes = get_time() - turbLes 
-          call turbulenceLes(w  ,gradU1,gradU2  , x   ,eddyVisc
-     .                      ,cs ,yPlus                               
-     .                      ,sedge,e  ,     ie, nelcon ,pedge ,ix
-     .                      ,numel,ndm,   nen,nshared,ndf
-     .                      ,nshared,8,0,1)
-          turbLes = get_time() - turbLes 
-        endif
-c .....................................................................
 c ... SIMPLER 
 c        if(simpleR) then
 c ... pseudo-velocidades
@@ -615,7 +642,7 @@ c ... atualizacao de u,v e p
      .                   ,underU,underPc,simpleR)
         simpleUpdateTime = get_time() - simpleUpdateTime
 c .....................................................................
-c
+c                                                                       
 c ... equacao de transporte da energia
   100   continue
         if(sEnergy) then
@@ -958,6 +985,44 @@ c *********************************************************************
       do i = 1, numel
         if(pedge(idCell,i) .eq. -1) p(i) = sedge(ndf,idCell,i)
       enddo
+      return
+      end
+c *********************************************************************
+c
+c *********************************************************************
+c * PRESSURELES : presssao modifica pelo modelo de turbulencia        *
+c * ----------------------------------------------------------------- *
+c * parametros de entrada :                                           *
+c * ----------------------------------------------------------------- *
+c * p        - campo de pressao                                       *
+c * gradU1   - gradiente da celociade u1                              *
+c * gradU2   - gradiente da velociade u2                              *
+c * eddyVisc - viscosidade turbulenta                                 *
+c * numel    - numero de elementos                                    *
+c * ndm      - numero de dimensoes                                    *
+c * ----------------------------------------------------------------- *
+c * parametros de saida                                               *
+c * ----------------------------------------------------------------- *
+c * p        - campo de pressao modificado ( P = P + (1/3)(sigmakk)   *
+c * ----------------------------------------------------------------- *
+c *********************************************************************      
+      subroutine pressureLes(p    ,gradU1,gradU2  ,eddyVisc
+     .                      ,numel,ndm)
+      implicit none
+      real*8 p(*),gradU1(ndm,*),gradU2(ndm,*)
+      real*8 eddyVisc(*)
+      integer numel,ndm
+      real*8  s11,s22  
+      integer i
+c 
+c ...
+      do i = 1, numel
+        s11 = gradU1(1,i)   ! du1/dx1
+        s22 = gradU2(2,i)   ! du2/dx2
+        p(i) = p(i) - 2.0d0*eddyVisc(i)*(s11+s22)
+      enddo
+      
+c .....................................................................      
       return
       end
 c *********************************************************************

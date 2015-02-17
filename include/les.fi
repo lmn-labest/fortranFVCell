@@ -1,0 +1,2 @@
+      integer wallModelF,lesModel
+      common /les_common/ wallModelF,lesModel

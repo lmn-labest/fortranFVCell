@@ -1,0 +1,38 @@
+config
+memoria 100 openMpCell true   nThreadsCell 2 openMpSolver true nThreadsSolver 2 reord false bvtk true 
+end config
+mesh
+nnode 6741 numel 6400 dim 2 ndf 0 ndfF 3 ndfE 0 maxno 4 numat 1
+materials
+1 75 1.0d-4 1.0d0 0.0 0.0 0.0 1.d0 7
+end materials
+insert camada_limite_coor.dat
+insert camada_limite_elem.dat
+insert camada_limite_res.dat
+end mesh
+itSimple  100
+les 4 3
+simpleC
+#skewC
+underU  1.0d0
+underPc 1.0d0
+tSimpU1 1.0d-5
+tSimpU2 1.0d-5
+tSimpPc 1.0d-5 
+pgeo
+dt 0.01
+loop2  1
+loop1 100
+simple
+pEstatic  
+ppres
+pyPlus
+pveloc
+pEddyVis
+pDStress
+pStress
+pvort2D
+next1
+next2
+stop
+

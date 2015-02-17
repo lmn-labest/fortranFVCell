@@ -166,6 +166,14 @@ c ......................................................................
         write(StrExtensao,'( I6 )') NumArq
         write(StrExtensao,'( A  )') adjustl(StrExtensao)
         StrExtensao='_pyPlus_'//trim(StrExtensao)//'.vtk'
+      elseif(code .eq. 59) then
+        write(StrExtensao,'( I6 )') NumArq
+        write(StrExtensao,'( A  )') adjustl(StrExtensao)
+        StrExtensao='_pDstress_'//trim(StrExtensao)//'.vtk'
+      elseif(code .eq. 60) then
+        write(StrExtensao,'( I6 )') NumArq
+        write(StrExtensao,'( A  )') adjustl(StrExtensao)
+        StrExtensao='_pStress_'//trim(StrExtensao)//'.vtk'
       endif    
 c ................................................................
 c
