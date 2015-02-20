@@ -969,30 +969,33 @@ c ... Kader - 1981
 c ... universal near wall model
       if( codWall .eq. 1 ) then
 c ... wall shear stress (viscosidade)
-        vonKarmani = 1.0d0/vonKarman
         stressW  =  viscosity*vt/dy
-        do i = 1, maxIt
 c ... friction velocity
-          fu     = dsqrt(stressW/specificMass)
+        fu     = dsqrt(stressW/specificMass)
+        do i = 1, maxIt
+          fu0      = fu 
 c ...
-          yPlus = specificMass*fu*dy/viscosity
+          yPlus    = specificMass*fu*dy/viscosity
+          uPlus    = vt/fu
 c .....................................................................
 c 
 c ... 
           if( yPlus .le. 11.81d0) then
-            uPlus = yPlus
+            fu    = 2.0d0*fu*(uPlus/(uPlus+uPlus))
           else 
-            uPlus = vonKarmani*dlog(E*yPlus)
+            fu    = fu*((1.0d0 
+     .            + 2.0d0*vonKarman*uPlus
+     .            -dlog(E*yPlus))/ (1.0d0 + vonKarman*uPlus))
           endif
-          stressW0 = stressW
-          stressW  = specificMass*(vt/uPLus)*(vt/uPLus)          
-          if(dabs(stressW-stressW0) .lt. 1.0d-7) goto 100 
+          if(dabs(fu-fu0) .lt. 1.0d-7) goto 100 
         enddo
         print*,'Funcao de parede nao convergiu !!!'
         print*,'Tipo : ',codWall                    
-        print*,i,dabs(stressW-stressW0),nel
+        print*,i,dabs(fu-fu0),nel
         stop
   100   continue
+        yPlus = specificMass*fu*dy/viscosity
+        stressW  = specificMass*(vt/uPLus)*(vt/uPLus)          
 c .....................................................................
 c
 c ... universal near wall model kader 1981
@@ -1004,6 +1007,7 @@ c ... friction velocity(chute inicial)
         fu       = dsqrt(stressW/specificMass)
 c .....................................................................
         do i = 1, maxIt
+          fu0    = fu 
 c ...
           yPlus    = specificMass*fu*dy/viscosity
           uPlus    = vt/fu
@@ -1032,9 +1036,9 @@ c .....................................................................
 c
 c ...
 c         print*,yPlus
-          fu     = fu*(1.0d0- temp2/temp3)
+          fu     = fu*(1.0d0 - temp2/temp3)
 c .....................................................................
-          if(dabs(temp2/temp3) .lt. 1.0d-7) goto 200 
+          if(dabs(fu-fu0) .lt. 1.0d-7) goto 200 
         enddo
         print*,'Funcao de parede nao convergiu !!!'
         print*,'Tipo : ',codWall                    
@@ -1093,7 +1097,7 @@ c
      .           + (Ei)*(-gama*dexp(gama) + gama  
      .           + gama*gama + 0.5d0*gama*gama*gama)
           fu     = fu*(1.0d0 - temp1/temp2)
-          if(dabs(temp1/temp2) .lt. 1.0d-7) goto 300 
+          if(dabs(fu-fu0) .lt. 1.0d-7) goto 300 
         enddo
         print*,'Funcao de parede nao convergiu !!!'
         print*,'Tipo : ',codWall                    

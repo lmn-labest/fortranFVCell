@@ -1,0 +1,44 @@
+config 
+memoria 200 openMpCell true nThreadsCell 2 openMpSolver true  nThreadsSolver 2 reord false bvtk true
+end config
+mesh
+nnode    161001 numel    160000 ndf 0 ndfF 3 ndfE 0 numat 1 maxno 4 dim 2
+materials
+1 75 1.0d-4  1.0d0 0.0 0.0 0.0d0 1.0d0 7
+end materials
+insert jato_coor.dat
+insert jato_elem.dat
+insert jato_res.dat
+end mesh
+simpleC
+underP 1.0d0
+underU 1.0d0
+itSimple  100
+tSimpU1 1.0e-4
+tSimpU2 1.0e-4
+tSimpPc 1.0e-4
+pgeo
+#tDinamic
+#------
+#bench
+dt 0.02
+les 4 4
+loop2    100 
+  loop1   10 
+    simple
+    pEstatic  
+  next1
+  pveloc
+  ppres
+  pDsmago
+  pyPlus
+  pgradU1
+  pgradU2
+  pEddyVis
+  pvort2D
+  pDstress
+  pelev
+  pgradP
+  save
+next2  
+stop

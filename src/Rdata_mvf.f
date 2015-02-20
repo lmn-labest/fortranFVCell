@@ -56,6 +56,8 @@ c .....................................................................
       data nincl /4/
 c ......................................................................
 c
+c ... 
+      naux = - 1
 c ... Leitura dos parametros da malha: nnode,numel,numat,nen,ndf,ndm
       call parameters(nnode,numel,nen,ndfT1,ndfF,ndfE,ndm,numat,nin)
 c ......................................................................      
@@ -352,9 +354,12 @@ c
       naux = nin
       call readmacro(nin,.false.)
       write(fname,'(80a)') (word(j),j=1,strl)
-      open(nincl, file= fname)
+      open(nincl, file= fname,status= 'old',err=1651,action='read')
       nin = nincl
       go to 100
+ 1651 continue
+      print*, trim(fname), ' arquivo nao existente !'
+      stop
 c ......................................................................      
 c
 c ... (return) Retorna leitura para arquivo de dados basico:

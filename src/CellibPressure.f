@@ -61,7 +61,7 @@ c ... variavel internas
       real*8 wfn,sp,cvc,cv,cp,cf,specificMassA,mKsiF(4)
       real*8 const,km(3,4),ZERO,dVirtualP(2),dVirtualViz(2),gama
       integer i,j,l,idcell,viznel,icod,tRo1,tRo2,cor
-      parameter (ZERO  = 1.0d-14)
+      parameter (ZERO  = 1.0d-7)
       logical bs
       parameter (const = 1.0d60)
       external limitv,areacell
@@ -72,6 +72,7 @@ c ...
       idCell = nshared + 1
       tRo1   = 2
       tRo2   = 3
+      kf     = 0
 c ......................................................................
 c
 c ...
@@ -399,10 +400,10 @@ c ... variavel externas
       integer nel,acod,nshared,ndm,sn(2,*)
 c ... variavel internas
       real*8 xc(3,5),x(ndm,nshared,nshared+1),d(2,nshared+1),un(*)
-      real*8 gfk,umin,umax,r,specificMass,dfd,kf,nk,ndd,cd
+      real*8 gfk,r,specificMass,dfd,kf,nk,ndd,cd
       real*8 um(4),kis(3,4),ksi(3,4),eta(3,4),n(3,4),meta(4),mksi(4)
       real*8 u(5),u0(5),u1(5),ca(4),k(10,*),xm(3,4),gf(2),gfp(2),area(5)
-      real*8 areacell,ug(4),xcg(3,4),alpha,dd(2),vm(2,4),vmf(2),uf
+      real*8 areacell,ug(4),xcg(3,4),alpha,dd(2),uf
       real*8 limitv,eps,df(3,4),par(2),aux,pl,ddf(2),pre(nshared+1)
       real*8 wfn,sp,cvc,cv,specificMassA,mKsiF(4),gama
       real*8 const,km(3,4),ZERO
@@ -416,6 +417,7 @@ c ...
       icod   = 1
       idCell = nshared + 1
       cor   =  intVel
+      kf     = 0
 c ......................................................................
 c
 c ...
@@ -439,12 +441,14 @@ c ... gerando o centroide da celula fantasmas
             xcg(j,i) = xc(j,idcell) + 2.d0*ca(i)*n(j,i)
           enddo
 c ... condicao de controno para as celulas fantasma
-          if(pedge(i) .eq. 3) then
+          if(pedge(i) .eq. 3 ) then
             if(iws .eq. 2) then
               ug(i) = 0.0d0
             else    
               ug(i) = sedge(3,i)
             endif
+          else if (pedge(i) .eq. 6) then
+            ug(i) = u(idCell)
 c ... variavel prescrita prescrita 
           else
             gama = 2.d0*ca(i)
@@ -496,16 +500,8 @@ c ... difusao direta
              sp  = sp + dfd
 c ... velocidade 
             wfn = w(1,idcell)*n(1,i) + w(2,idcell)*n(2,i)
-            if(dabs(wfn) .gt. ZERO) then
-              if(wfn .gt. 0.0) then
-                cv  = specificMassA*wfn*meta(i)
-              elseif( wfn .lt. 0.0) then
-                cv  = specificMassA*wfn*meta(i)
-              endif
-            else
-              cv = 0.0d0
-            endif
-            p     = p - cv    
+            cv  = specificMassA*wfn*meta(i)
+            p   = p - cv    
 c ... localmente parabolica
           else if(pedge(i) .eq. 4) then
             wfn = sedge(1,i)*n(1,i) + sedge(2,i)*n(2,i)
@@ -513,6 +509,9 @@ c ... localmente parabolica
             p   =  p  - cv
 c .....................................................................
           endif
+c .....................................................................
+c                                                                        
+c ...                                                                  
         else
 c ... M. Darwish, I. Sraj, F. Maukalled (2009)       
           if(cor .eq. 1 .or. cor .eq. 2 .or. cor .eq. 3) then

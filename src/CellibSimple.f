@@ -72,7 +72,7 @@ c **********************************************************************
       integer ndm,nshared,i,j,icod,acod,idcell,sn(2,*),l
       real*8 const,aNb,ZERO
       logical bs
-      parameter (ZERO  = 1.0d-4)
+      parameter (ZERO  = 1.0d-7)
       parameter (eps   = 1.0d-14)
       parameter (const = 1.0d60)
 c ... 
@@ -1141,7 +1141,7 @@ c .......................................................................
       integer ndm,nshared,i,j,icod,acod,idcell,sn(2,*),l
       real*8  const,ZERO
       logical bs
-      parameter (ZERO =  1.0d-60)
+      parameter (ZERO =  1.0d-4)
       parameter (eps   = 1.0d-14)
       parameter (const = 1.0d60)
 c ... 
@@ -1230,7 +1230,10 @@ c     da celula fantasmas)
             ug(i) = sedge(iws2,i)
 c ... pressao prescrita            
           else if(pedge(i) .eq. 3 .or. pedge(i) .eq. 4) then
-            ug(i) = u(idCell)          
+            ug(i) = u(idCell)
+c ... tensao na parede (         
+          else if(pedge(i) .eq. 5) then
+            ug(i) = u(idCell) - 2.0d0*ca(i)*sedge(iws2,i)/viscosity 
           endif
         else
           do j = 1, ndm
@@ -1312,15 +1315,12 @@ c ... fluxo advectivo de primeira ordem
 c ... pressao prescrita
           else if(pedge(i) .eq. 3) then
             wfn = w(1,idCell)*n(1,i) + w(2,idCell)*n(2,i)
-            if(dabs(wfn) .gt. ZERO) then
-             if( wfn .gt. 0.d0 ) then 
-                cv  = specificMassA*wfn*meta(i)
-                sp  = sp + cv
-              else if(wfn .lt. 0.0) then
-c                wfn = -dsqrt(2.d0*(sedge(3,i)-u0(idCell))/specificMassA)
-                cv  =  specificMassA*wfn*meta(i)
-                p   =  p + cv*wfn
-              endif
+            if( wfn .gt. 0.d0 ) then 
+              cv  = specificMassA*wfn*meta(i)
+              sp  = sp + cv
+            else if(wfn .lt. 0.0) then
+              cv  =  specificMassA*wfn*meta(i)
+              p   =  p + cv*wfn
             endif
 c ... localmente parabolica
           else if(pedge(i) .eq. 4) then
@@ -1330,10 +1330,9 @@ c ... localmente parabolica
 c ... tensao tagencial
           else if(pedge(i) .eq. 5) then
             p   =  p + sedge(iws2,i)*meta(i)
-c ... Wall modelegin H. Werner and H. Wengle 
-          else if(pedge(i) .eq. 6) then
-          endif
 c .....................................................................
+          endif
+c ...................................................................... 
 c
 c ...
         else
@@ -1610,16 +1609,15 @@ c ... fluxo advectivo de primeira ordem
 c ... pressao prescrita
           else if(pedge(i) .eq. 3) then
             wfn = w(1,idCell)*n(1,i) + w(2,idCell)*n(2,i)
-            if(dabs(wfn) .gt. ZERO) then 
-              if( wfn .gt. 0.d0 ) then 
-                cv  = specificMassA*wfn*meta(i)
-                p   = p + cv
-              else if(wfn .lt. 0.d0) then
+            if( wfn .gt. 0.d0 ) then 
+              cv  = specificMassA*wfn*meta(i)
+              p   = p + cv
+            else if(wfn .lt. 0.d0) then
 c               wfn = -dsqrt(2.d0*(sedge(3,i)-u0(idCell))/specificMassA)
-                cv  =  specificMassA*wfn*meta(i)
-                dfd =  dfd + cv
-              endif
+              cv  =  specificMassA*wfn*meta(i)
+              dfd =  dfd + cv
             endif
+c ...................................................................... 
           endif 
         endif 
       enddo
