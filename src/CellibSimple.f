@@ -1116,6 +1116,7 @@ c **********************************************************************
       real*8 a(*),sp,xc(3,5),x(ndm,nshared,nshared+1),dfd,nk,um(4),cd
       real*8 sedge(3,nshared+1),ksi(3,4),eta(3,4),n(3,4),meta(4)
       real*8 mksi(4),area(5),ap
+      real*8 un(ndm,5)            
       real*8 u(5),u0(5),u1(5)
       real*8 stressW(4),yPLus(4),yPLusMax
       real*8 ca(4),alpha,k(10,*),xm(3,4)
@@ -1556,6 +1557,7 @@ c ...
       return
   500 continue
       return
+c .....................................................................
   600 continue
       return
 c .....................................................................

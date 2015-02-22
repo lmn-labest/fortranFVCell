@@ -58,8 +58,12 @@ c ... arquivo de impressao nos nos ( temp,flux,disp,stress,...)
       logical new_file(nfiles),flag_pcd
 c ......................................................................
 c
-c ... nao-linear
+c ...
       real*8 ddum
+      integer idum
+c ......................................................................
+c
+c ... nao-linear
       logical itPlot
 c
 c ... Variaveis descritivas do problema:
@@ -564,7 +568,7 @@ c ... leitura do arquivo de dados
      .             ,i_fnode,i_e,i_ie,i_w,i_t1,i_u1,i_u2,i_p,i_temp
      .             ,i_num,nnode,numel
      .             ,ndm,ndfF,ndfE,ndfT1,sTrans,sSimple,sEnergy,nen
-     .             ,numat,nin)
+     .             ,nshared,numat,nin)
       readtime = get_time() - readtime  
 c       call si(ia(i_u),numel,ndf)
 c       stop 
@@ -924,9 +928,12 @@ c
 c ......................................................................
   500 continue
       print*,'Macro PTRANS1'
-      call uformnode(ia(i_un),ia(i_t1),ia(i_gradT1),ia(i_fluxlT1)
-     .              ,ia(i_x),ia(i_mdf),ia(i_ix),ia(i_md),nnode,numel
-     .              ,ndm,nen,1,2)
+      call uformnode(ia(i_un),ia(i_t1) ,ia(i_gradT1)     ,ia(i_fluxlT1)
+     .              ,ia(i_x) ,ia(i_mdf),ia(i_ix)         ,ia(i_ie)
+     .              ,ia(i_md),ia(i_pedgeT1),ia(i_sedgeT1),ia(i_nelcon)
+     .              ,nnode   ,numel
+     .              ,ndm     ,nen           ,1
+     .              ,1       ,nshared       ,2      ,3)
       fileout = name(prename,istep,1)
       nCell = 'elTrans1'
       nNod  = 'noTrans1'
@@ -980,9 +987,12 @@ c ......................................................................
       call JacobionMatrixUform(ia(i_gradTu),ia(i_gradU1),ia(i_gradU2)
      .                        ,numel,ndm)
 c
-      call uformnode(ia(i_nn),ia(i_w),ia(i_gradTu),ia(i_fluxlU1),ia(i_x)
-     .              ,ia(i_mdf),ia(i_ix),ia(i_md),nnode,numel,ndm,nen
-     .              ,ndfF-1,2)
+      call uformnode(ia(i_nn),ia(i_w)     ,ia(i_gradTu) ,ia(i_fluxlU1)
+     .              ,ia(i_x) ,ia(i_mdf)   ,ia(i_ix)     ,ia(i_ie)
+     .              ,ia(i_md),ia(i_pedgeF),ia(i_sedgeF) ,ia(i_nelcon)
+     .              ,nnode   ,numel     
+     .              ,ndm     ,nen       ,ndfF  
+     .              ,ndfF-1  ,nshared   ,2   ,1)
 c ......................................................................
 c
 c ...      
@@ -1003,9 +1013,12 @@ c
 c ......................................................................
   800 continue
       print*,'Macro PELEV'
-      call uformnode(ia(i_un),ia(i_p),ddum,ddum,ia(i_x)
-     .              ,ia(i_mdf),ia(i_ix),ia(i_md),nnode,numel,ndm,nen,1
-     .              ,1)
+      call uformnode(ia(i_un),ia(i_p)     ,ddum,ddum
+     .              ,ia(i_x) ,ia(i_mdf)   ,ia(i_ix)     ,ia(i_ie)
+     .              ,ia(i_md),ia(i_pedgeF),ia(i_sedgeF) ,ia(i_nelcon)
+     .              ,nnode   ,numel
+     .              ,ndm     ,nen      ,ndfF
+     .              ,1       ,nshared  ,1,2)
       i_nn        = alloc_8('xe      ',  3,nnode)
       fileout = name(prename,istep,8)
       nCell = ''
@@ -1113,9 +1126,12 @@ c ......................................................................
       call gform(ia(i_p),ia(i_gradP),ia(i_fluxlPc),ia(i_x),ia(i_sedgeF)
      .            ,ia(i_e),ia(i_ls),ia(i_ie),ia(i_nelcon),ia(i_pedgeF)
      .            ,ia(i_ix),numel,ndm,nen,nen,1,ndfF,2,3,2)
-      call uformnode(ia(i_un),ia(i_p),ia(i_gradPc),ia(i_fluxlPc),ia(i_x)
-     .             ,ia(i_mdf),ia(i_ix),ia(i_md),nnode,numel,ndm,nen,1
-     .             ,3)
+      call uformnode(ia(i_un),ia(i_p),ia(i_gradPc),ia(i_fluxlPc)
+     .             ,ia(i_x)  ,ia(i_mdf),ia(i_ix) ,ia(i_ie)
+     .             ,ia(i_md) ,ia(i_pedgeF),ia(i_sedgeF) ,ia(i_nelcon)
+     .             ,nnode    ,numel    
+     .             ,ndm      ,nen      ,ndfF
+     .             ,1        ,nshared  ,2,      3)
       fileout = name(prename,istep,11) 
       nCell = 'elPressure'
       nNod  = 'noPressure'
@@ -1137,8 +1153,12 @@ c ......................................................................
       call gform(ia(i_p),ia(i_gradP),ia(i_fluxlPc),ia(i_x),ia(i_sedgeF)
      .            ,ia(i_e),ia(i_ls),ia(i_ie),ia(i_nelcon),ia(i_pedgeF)
      .            ,ia(i_ix),numel,ndm,nen,nen,1,ndfF,2,3,2)
-      call uformnode(ia(i_nn),ia(i_gradP),ddum,ddum,ia(i_x),ia(i_mdf)
-     .              ,ia(i_ix),ia(i_md),nnode,numel,ndm,nen,ndm,2)
+      call uformnode(ia(i_nn),ia(i_gradP),ddum,ddum
+     .             ,ia(i_x)  ,ia(i_mdf),ia(i_ix) ,ia(i_ie)
+     .             ,ia(i_md) ,idum        ,ddum         ,ia(i_nelcon)
+     .             ,nnode    ,numel
+     .             ,ndm      ,nen         ,1
+     .             ,ndm      ,nshared     ,2            ,0)
       nCell = 'elGradP'
       nNod  = 'noGradP'
       call write_res_vtk(ia(i_ix),ia(i_x),ia(i_gradP),ia(i_nn),nnode
@@ -1158,9 +1178,12 @@ c ......................................................................
       call gform(ia(i_en),ia(i_gradE),ia(i_fluxlE),ia(i_x),ia(i_sedgeE)
      .            ,ia(i_e),ia(i_ls),ia(i_ie),ia(i_nelcon),ia(i_pedgeE)
      .            ,ia(i_ix),numel,ndm,nen,nen,1,ndfE,2,1,3)
-      call uformnode(ia(i_un),ia(i_en),ia(i_gradE),ia(i_fluxlE),ia(i_x)
-     .             ,ia(i_mdf),ia(i_ix),ia(i_md),nnode,numel,ndm,nen,1
-     .             ,3)
+      call uformnode(ia(i_un),ia(i_en),ia(i_gradE),ia(i_fluxlE)
+     .             ,ia(i_x)  ,ia(i_mdf),ia(i_ix) ,ia(i_ie)
+     .             ,ia(i_md) ,idum        ,ddum         ,ia(i_nelcon)
+     .             ,nnode    ,numel
+     .             ,ndm      ,nen         ,1
+     .             ,1        ,nshared     ,2            ,0)
       fileout = name(prename,istep,13)
       nCell = 'elEnergy'
       nNod  = 'noEnergy'
@@ -1188,8 +1211,12 @@ c ......................................................................
  1500 continue
       print*, 'Macro PMASSEPS'
       i_nn        = alloc_8('nn      ',2,nnode)
-      call uformnode(ia(i_nn),ia(i_ro),ddum,ddum,ia(i_x),ia(i_mdf)
-     .              ,ia(i_ix),ia(i_md),nnode,numel,ndm,nen,3,2)
+      call uformnode(ia(i_un),ia(i_ro),ddum       ,ddum        
+     .             ,ia(i_x)  ,ia(i_mdf),ia(i_ix) ,ia(i_ie)
+     .             ,ia(i_md) ,idum        ,ddum         ,ia(i_nelcon)
+     .             ,nnode    ,numel
+     .             ,ndm      ,nen         ,1
+     .             ,3        ,nshared     ,2            ,0)
       fileout = name(prename,istep,14) 
       nCell = 'elMassEP'
       nNod  = 'noMassEP'
@@ -1217,10 +1244,12 @@ c ...
 c .......................................................................
 c
 c ...     
-      call uformnode(ia(i_un),ia(i_temp),ia(i_gradT),ia(i_fluxlE)
-     .              ,ia(i_x)
-     .              ,ia(i_mdf),ia(i_ix),ia(i_md),nnode,numel,ndm,nen,1
-     .              ,3)
+      call uformnode(ia(i_un),ia(i_temp)  ,ia(i_gradT)  ,ia(i_fluxlE)
+     .             ,ia(i_x)  ,ia(i_mdf)   ,ia(i_ix)     ,ia(i_ie)
+     .             ,ia(i_md) ,ia(i_pedgeE),ia(i_pedgeE) ,ia(i_nelcon)
+     .             ,nnode    ,numel
+     .             ,ndm      ,nen         ,1
+     .             ,1        ,nshared     ,2            ,3)
 c .......................................................................
 c
 c ...
@@ -1242,8 +1271,12 @@ c
 c ......................................................................
  1700 continue
       print*, 'Macro PDIV'
-      call uformnode(ia(i_un),ia(i_div),ddum,ddum,ia(i_x),ia(i_mdf)
-     .              ,ia(i_ix),ia(i_md),nnode,numel,ndm,nen,1,2)
+      call uformnode(ia(i_un),ia(i_div)   ,ddum         ,ddum          
+     .             ,ia(i_x)  ,ia(i_mdf)   ,ia(i_ix)     ,ia(i_ie)
+     .             ,ia(i_md) ,idum        ,ddum         ,ia(i_nelcon)
+     .             ,nnode    ,numel
+     .             ,ndm      ,nen         ,1
+     .             ,1        ,nshared     ,2            ,0)
       fileout = name(prename,istep,15)
       nCell = 'elDiv'
       nNod  = 'noDiv' 
@@ -1359,9 +1392,13 @@ c ......................................................................
  2500 continue
       print*, 'Macro SAVE '       
       fileout = name(prename,0,30)
-      call saveSimple(ia(i_w),ia(i_w0),ia(i_p),ia(i_en),ia(i_en0)
-     .               ,ia(i_ro),nnode,numel,ndm,istep,t
-     .               ,fileout,.false.,sEnergy,noutSave)
+      call saveSimple(ia(i_w)       ,ia(i_w0)   ,ia(i_p)
+     .               ,ia(i_en)      ,ia(i_en0)  ,ia(i_ro)
+     .               ,ia(i_eddyVisc),ia(i_yPlus),ia(i_cs)
+     .               ,nnode         ,numel      ,ndm
+     .               ,istep         ,t          ,fileout
+     .               ,.false.       ,sEnergy    ,flagTurbulence
+     .               ,noutSave)
       goto 50
 c ......................................................................
 c
@@ -1371,9 +1408,13 @@ c ......................................................................
  2600 continue
       print*, 'Macro LOAD '       
       fileout = name(prename,0,30)
-      call saveSimple(ia(i_w),ia(i_w0),ia(i_p),ia(i_en),ia(i_en0)
-     .               ,ia(i_ro),nnode,numel,ndm,istep,t
-     .               ,fileout,.true.,sEnergy,noutSave)
+      call saveSimple(ia(i_w)       ,ia(i_w0)   ,ia(i_p)
+     .               ,ia(i_en)      ,ia(i_en0)  ,ia(i_ro)
+     .               ,ia(i_eddyVisc),ia(i_yPlus),ia(i_cs)
+     .               ,nnode         ,numel      ,ndm
+     .               ,istep         ,t          ,fileout
+     .               ,.true.        ,sEnergy    ,flagTurbulence
+     .               ,noutSave)
       goto 50
 c ----------------------------------------------------------------------
 c/ro
@@ -1447,8 +1488,8 @@ c ... codigo para o arquivo _temp_node.txt
       code = 25
 c .....................................................................
       string = 'Temperatura'
-      call uformnode(ia(i_un),ia(i_t1),ia(i_gradT1),ia(i_x),ia(i_mdf)
-     .              ,ia(i_ix),ia(i_md),nnode,numel,ndm,nen,ndfT1,2)
+c     call uformnode(ia(i_un),ia(i_t1),ia(i_gradT1),ia(i_x),ia(i_mdf)
+c    .              ,ia(i_ix),ia(i_md),nnode,numel,ndm,nen,ndfT1,2)
       do j = 1, num_pnode
          call printnode(ia(i_un),ia(i_node+j-1),ndfT1,istep,t
      .                ,string,prename,ia(i_nfile+j-1),code,new_file(1))
@@ -1627,8 +1668,12 @@ c ......................................................................
       print*, 'Macro PGRADU1'
       fileout     = name(prename,istep,31) 
       i_nn        = alloc_8('nn      ',ndm,nnode)
-      call uformnode(ia(i_nn),ia(i_gradU1),ddum,ddum,ia(i_x),ia(i_mdf)
-     .              ,ia(i_ix),ia(i_md),nnode,numel,ndm,nen,ndm,2)
+      call uformnode(ia(i_nn),ia(i_gradU1),ddum,ddum
+     .             ,ia(i_x)  ,ia(i_mdf),ia(i_ix) ,ia(i_ie)
+     .             ,ia(i_md) ,idum        ,ddum         ,ia(i_nelcon)
+     .             ,nnode    ,numel
+     .             ,ndm      ,nen         ,1
+     .             ,ndm      ,nshared     ,2            ,0)
       nCell = 'elGradU1'
       nNod  = 'noGradU1'
       call write_res_vtk(ia(i_ix),ia(i_x),ia(i_gradU1),ia(i_nn),nnode
@@ -1650,8 +1695,12 @@ c ......................................................................
       print*, 'Macro PGRADU2'
       fileout     = name(prename,istep,32) 
       i_nn        = alloc_8('nn      ',ndm,nnode)
-      call uformnode(ia(i_nn),ia(i_gradU2),ddum,ddum,ia(i_x),ia(i_mdf)
-     .              ,ia(i_ix),ia(i_md),nnode,numel,ndm,nen,ndm,2)
+      call uformnode(ia(i_nn),ia(i_gradU2),ddum,ddum
+     .             ,ia(i_x)  ,ia(i_mdf),ia(i_ix) ,ia(i_ie)
+     .             ,ia(i_md) ,idum        ,ddum         ,ia(i_nelcon)
+     .             ,nnode    ,numel
+     .             ,ndm      ,nen         ,1
+     .             ,ndm      ,nshared     ,2            ,0)
       nCell = 'elGradU2'
       nNod  = 'noGradU2'
       call write_res_vtk(ia(i_ix),ia(i_x),ia(i_gradU2),ia(i_nn),nnode
@@ -1736,8 +1785,12 @@ c ...
 c .......................................................................
 c
 c ...
-       call uformnode(ia(i_nn),ia(i_gradT),ddum,ddum,ia(i_x),ia(i_mdf)
-     .               ,ia(i_ix),ia(i_md),nnode,numel,ndm,nen,ndm,2)
+      call uformnode(ia(i_nn),ia(i_gradT),ddum,ddum
+     .             ,ia(i_x)  ,ia(i_mdf),ia(i_ix) ,ia(i_ie)
+     .             ,ia(i_md) ,idum        ,ddum         ,ia(i_nelcon)
+     .             ,nnode    ,numel
+     .             ,ndm      ,nen         ,1
+     .             ,ndm      ,nshared     ,2            ,0)
 c .......................................................................
 c
 c ...
@@ -1762,8 +1815,12 @@ c ......................................................................
       call gform(ia(i_en),ia(i_gradE),ia(i_fluxlE),ia(i_x)
      .          ,ia(i_sedgeE),ia(i_e),ia(i_ls),ia(i_ie),ia(i_nelcon)
      .          ,ia(i_pedgeE),ia(i_ix),numel,ndm,nen,nen,1,ndfF,2,3,2)
-      call uformnode(ia(i_nn),ia(i_gradE),ddum,ddum,ia(i_x),ia(i_mdf)
-     .              ,ia(i_ix),ia(i_md),nnode,numel,ndm,nen,ndm,2)
+      call uformnode(ia(i_nn),ia(i_gradE),ddum,ddum
+     .             ,ia(i_x)  ,ia(i_mdf),ia(i_ix) ,ia(i_ie)
+     .             ,ia(i_md) ,idum        ,ddum         ,ia(i_nelcon)
+     .             ,nnode    ,numel
+     .             ,ndm      ,nen         ,1
+     .             ,ndm      ,nshared     ,2            ,0)
       nCell = 'elGradE'
       nNod  = 'noGradE'
       call write_res_vtk(ia(i_ix),ia(i_x),ia(i_gradE),ia(i_nn),nnode
@@ -1875,8 +1932,12 @@ c ...
 c ...
 c
 c ...
-      call uformnode(ia(i_un),ia(i_nn),ddum,ddum,ia(i_x),ia(i_mdf)
-     .              ,ia(i_ix),ia(i_md),nnode,numel,ndm,nen,1,2)
+      call uformnode(ia(i_un),ia(i_nn   ),ddum,ddum
+     .             ,ia(i_x)  ,ia(i_mdf),ia(i_ix) ,ia(i_ie)
+     .             ,ia(i_md) ,idum        ,ddum         ,ia(i_nelcon)
+     .             ,nnode    ,numel
+     .             ,ndm      ,nen         ,1
+     .             ,1        ,nshared     ,2            ,0)
 c ......................................................................
 c
 c ...      
@@ -1921,8 +1982,12 @@ c ......................................................................
  5300 continue
 c ...
       print*, 'Macro PEDDYVIS'
-      call uformnode(ia(i_un),ia(i_eddyVisc),ddum,ddum,ia(i_x),ia(i_mdf)
-     .              ,ia(i_ix),ia(i_md),nnode,numel,ndm,nen,1,2)
+      call uformnode(ia(i_un),ia(i_eddyVisc),ddum,ddum
+     .             ,ia(i_x)  ,ia(i_mdf),ia(i_ix) ,ia(i_ie)
+     .             ,ia(i_md) ,idum        ,ddum         ,ia(i_nelcon)
+     .             ,nnode    ,numel
+     .             ,ndm      ,nen         ,1
+     .             ,1        ,nshared     ,2            ,0)
 c ......................................................................
 c
 c ...      
@@ -2039,8 +2104,13 @@ c
 c ......................................................................
  6000 continue
       print*, 'Macro PDSMAGO'
-      call uformnode(ia(i_un),ia(i_cs),ddum,ddum,ia(i_x),ia(i_mdf)
-     .              ,ia(i_ix),ia(i_md),nnode,numel,ndm,nen,1,2)
+c ...
+      call uformnode(ia(i_un),ia(i_cs),ddum,ddum
+     .             ,ia(i_x)  ,ia(i_mdf),ia(i_ix) ,ia(i_ie)
+     .             ,ia(i_md) ,idum        ,ddum         ,ia(i_nelcon)
+     .             ,nnode    ,numel
+     .             ,ndm      ,nen         ,1
+     .             ,1        ,nshared     ,2            ,0)
 c ......................................................................
 c
 c ...      
@@ -2062,8 +2132,13 @@ c
 c ......................................................................
  6100 continue
       print*, 'Macro PYPLUS'
-      call uformnode(ia(i_un),ia(i_yPlus),ddum,ddum,ia(i_x),ia(i_mdf)
-     .              ,ia(i_ix),ia(i_md),nnode,numel,ndm,nen,1,2)
+c ...
+      call uformnode(ia(i_un),ia(i_yPlus),ddum,ddum
+     .             ,ia(i_x)  ,ia(i_mdf),ia(i_ix) ,ia(i_ie)
+     .             ,ia(i_md) ,idum        ,ddum         ,ia(i_nelcon)
+     .             ,nnode    ,numel
+     .             ,ndm      ,nen         ,1
+     .             ,1        ,nshared     ,2            ,0)
 c ......................................................................
 c
 c ...      
@@ -2103,8 +2178,12 @@ c ...
       i_nn        = alloc_8('nn      ',4,numel)
       call devitoricStress(ia(i_gradU1),ia(i_gradU2),ia(i_nn),numel,ndm)
 c    
-      call uformnode(ia(i_un),ia(i_nn),ddum,ddum,ia(i_x),ia(i_mdf)
-     .              ,ia(i_ix),ia(i_md),nnode,numel,ndm,nen,ndm*ndm,2)
+      call uformnode(ia(i_nn),ia(i_nn   ),ddum,ddum
+     .             ,ia(i_x)  ,ia(i_mdf),ia(i_ix) ,ia(i_ie)
+     .             ,ia(i_md) ,idum        ,ddum         ,ia(i_nelcon)
+     .             ,nnode    ,numel
+     .             ,ndm      ,nen         ,1
+     .             ,ndm*ndm  ,nshared     ,2            ,0)
 c ......................................................................
 c
 c ...
@@ -2146,8 +2225,12 @@ c ...
       i_nn        = alloc_8('nn      ',4,numel)
       call stress(ia(i_p),ia(i_gradU1),ia(i_gradU2),ia(i_nn),numel,ndm)
 c    
-      call uformnode(ia(i_un),ia(i_nn),ddum,ddum,ia(i_x),ia(i_mdf)
-     .              ,ia(i_ix),ia(i_md),nnode,numel,ndm,nen,ndm*ndm,2)
+      call uformnode(ia(i_nn),ia(i_nn   ),ddum,ddum
+     .             ,ia(i_x)  ,ia(i_mdf),ia(i_ix) ,ia(i_ie)
+     .             ,ia(i_md) ,idum        ,ddum         ,ia(i_nelcon)
+     .             ,nnode    ,numel
+     .             ,ndm      ,nen         ,1
+     .             ,ndm*ndm  ,nshared     ,2            ,0)
 c ......................................................................
 c
 c ...
@@ -2178,7 +2261,7 @@ c ......................................................................
       goto 9999
 c ......................................................................
 c
-c ......................................................................                                                                        
+c ...................................................................... 
 c
 c ... Macro-comando: STOP   
 c
@@ -2207,9 +2290,12 @@ c ...
 c ......................................................................
 c
 c ...      
-        call uformnode(ia(i_nn) ,ia(i_wMean)   ,ddum,ddum,ia(i_x)
-     .                ,ia(i_mdf),ia(i_ix)      ,ia(i_md)
-     .                ,nnode    ,numel         ,ndm,nen,ndfF-1,2)
+        call uformnode(ia(i_nn),ia(i_wMean),ddum,ddum
+     .               ,ia(i_x)  ,ia(i_mdf),ia(i_ix) ,ia(i_ie)
+     .               ,ia(i_md) ,ia(i_pedgeF),ia(i_sedgeF) ,ia(i_nelcon)
+     .               ,nnode    ,numel
+     .               ,ndm      ,nen         ,ndfF
+     .               ,ndfF-1   ,nshared     ,2            ,1)
 c ......................................................................
 c
 c ...      

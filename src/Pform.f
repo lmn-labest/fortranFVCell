@@ -1485,28 +1485,45 @@ c * fluxl  - limitador de fluxo                                       *
 c *  x     - coordenadas                                              *
 c * mdf    - nao definido                                             *
 c * ix     - conectividade                                            *
+c * ie     - tipo do elemento do material                             *
+c * pedge  - tipo de condicao de contorno                             *
+c * sedge  - condicoes de contorno nas arestas                        *
+c * viz    - vizinhos                                                 *
 c * md     - nao definido                                             *
 c * nnode  - numero de nos                                            *
 c * numel  - numero de elementos                                      *
 c * ndm    - numero de dimensoes                                      *
+c * nst    - graus de liperdade agrupados                             *
 c * nen    - numero de nos por elementos                              *
 c * ndf    - graus de liberdade                                       *
+c * nshared- numero de celula compartilhados pela celula central      *
 c * icod   - 1 - media aritimetica simples                            *
 c *        - 2 - media aritimetica ponderada pela distancia           *
-c *        - 2 - media calculada pelo gradiente                       *
+c *        - 3 - media calculada pelo gradiente                       *
+c * icod2  - consitencia com a condicao de controno                   * 
+c *        - 1 - velocidade                                           *
+c *        - 2 - pressao                                              *
+c *        - 3 - temperatrua                                          *
 c * ----------------------------------------------------------------- *
 c * Parametros de saida :                                             *
 c * ----------------------------------------------------------------- *
 c * un     - valores medios nodais                                    *
 c * ----------------------------------------------------------------- *
 c *********************************************************************
-      subroutine uformnode(un,u,grad,fluxl,x,mdf,ix,md,nnode,numel,ndm
-     .                    ,nen,ndf,icod)
+      subroutine uformnode(un    ,u       ,grad ,fluxl
+     .                    ,x     ,mdf     ,ix   ,ie
+     .                    ,md    ,pedge   ,sedge,viz  
+     .                    ,nnode ,numel    
+     .                    ,ndm   ,nen     ,nst 
+     .                    ,ndf   ,nshared ,icod,icod2)
       implicit none
       real*8 un(ndf,*),u(ndf,*),xc(3),dx,d,mdf(*),x(ndm,*)
       real*8 fluxl(*),grad(ndf,ndm,*)
-      integer nnode,numel,ndf,md(*),ix(nen+1,*),nen,ndm
-      integer i,k,j,nel,no,icod
+      integer nnode,numel,ndf,md(*),ix(nen+1,*),nen,ndm,nshared,nst
+      integer ie(*),pedge(nshared+1,*),viz(nshared,*)
+      real*8  sedge(nst,nshared+1,numel)
+      integer acod,sn(2,4),type,ma
+      integer i,k,j,nel,icod,icod2,no1,no2
       call mzero(md,nnode)
       call azero(mdf,nnode)
       call azero(un,ndf*nnode)
@@ -1515,11 +1532,11 @@ c ... media simples
       if( icod .eq. 1) then
         do nel = 1, numel
           do j = 1, nen
-            no = ix(j,nel)
+            no1 = ix(j,nel)
             do i = 1, ndf
-              un(i,no) = un(i,no) + u(i,nel)
+              un(i,no1) = un(i,no1) + u(i,nel)
             enddo
-            md(no) = md(no) + 1
+            md(no1) = md(no1) + 1
           enddo  
         enddo
         do j = 1, nnode  
@@ -1537,9 +1554,9 @@ c ... media ponderada pela distancia
           enddo
 c ... calculo do centroide            
           do j = 1, nen
-            no = ix(j,nel)
+            no1 = ix(j,nel)
             do k = 1, ndm 
-              xc(k) = xc(k) + x(k,no)
+              xc(k) = xc(k) + x(k,no1)
             enddo
           enddo
 c ... Triangulo          
@@ -1556,17 +1573,17 @@ c ... Quadrilatero
           endif  
 c .....................................................................      
           do j = 1, nen
-            no = ix(j,nel)
+            no1 = ix(j,nel)
             d  = 0.0d0
             do k = 1, ndm
-              dx    = x(k,no) - xc(k)
+              dx    = x(k,no1) - xc(k)
               d     = d + dx*dx
             enddo
             d = dsqrt(d)
             do i = 1, ndf
-              un(i,no) = un(i,no) + d*u(i,nel)
+              un(i,no1) = un(i,no1) + d*u(i,nel)
             enddo  
-            mdf(no) = mdf(no) + d
+            mdf(no1) = mdf(no1) + d
           enddo  
         enddo
         do j = 1, nnode  
@@ -1584,9 +1601,9 @@ c ... obtida por variacao linear na celula apartir do gradiente
           enddo
 c ... calculo do centroide            
           do j = 1, nen
-            no = ix(j,nel)
+            no1 = ix(j,nel)
             do k = 1, ndm 
-              xc(k) = xc(k) + x(k,no)
+              xc(k) = xc(k) + x(k,no1)
             enddo
           enddo
 c ... Triangulo          
@@ -1603,17 +1620,17 @@ c ... Quadrilatero
           endif  
 c .....................................................................      
           do j = 1, nen
-            no = ix(j,nel)
+            no1 = ix(j,nel)
             do i = 1, ndf
               d  = 0.0d0
               do k = 1, ndm
-                dx = x(k,no) - xc(k)
+                dx = x(k,no1) - xc(k)
 c                 d  = d + fluxl(nel)*grad(i,k,nel)*dx
                  d = d + grad(i,k,nel)*dx
               enddo
-              un(i,no) = un(i,no) + u(i,nel) + d
+              un(i,no1) = un(i,no1) + u(i,nel) + d
             enddo
-            md(no) = md(no) + 1
+            md(no1) = md(no1) + 1
           enddo  
         enddo
         do j = 1, nnode  
@@ -1626,7 +1643,85 @@ c
       endif
 c .....................................................................
 c
-c ... 
+c ... campo de de velocidade
+      if(icod2 .eq. 1) then
+        do nel = 1, numel
+          ma   = ix(nen+1,nel)
+          type = ie(ma)
+          call setcell(type,sn,acod)
+          do j = 1, nshared
+            if( viz(j,nel) .lt. 0 ) then
+              if(pedge(j,nel) .eq. 0 ) then
+                no1      = ix(sn(1,j),nel)
+                no2      = ix(sn(2,j),nel)
+                do i = 1, ndf
+                  un(i,no1) = 0.0d0
+                  un(i,no2) = 0.0d0
+                enddo  
+              else if(pedge(j,nel) .eq. 1 ) then
+                no1      = ix(sn(1,j),nel)
+                no2      = ix(sn(2,j),nel)
+                do i = 1, ndf
+                  un(i,no1) = sedge(i,j,nel)
+                  un(i,no2) = sedge(i,j,nel)
+                enddo  
+              else if(pedge(j,nel) .eq. 2 ) then
+                no1      = ix(sn(1,j),nel)
+                no2      = ix(sn(2,j),nel)
+                do i = 1, ndf
+                  un(i,no1) = sedge(i,j,nel)
+                  un(i,no2) = sedge(i,j,nel)
+                enddo  
+              endif
+            endif
+          enddo
+        enddo
+c .....................................................................
+c
+c ... campo de pressao
+      else if(icod2 .eq. 2) then
+        do nel = 1, numel
+          ma   = ix(nen+1,nel)
+          type = ie(ma)
+          call setcell(type,sn,acod)
+          do j = 1, nshared
+            if( viz(j,nel) .lt. 0 ) then
+              if(pedge(j,nel) .eq. 1 ) then
+                no1      = ix(sn(1,j),nel)
+                no2      = ix(sn(2,j),nel)
+                do i = 1, ndf
+                  un(i,no1) = sedge(nst,j,nel)
+                  un(i,no2) = sedge(nst,j,nel)
+                enddo  
+              endif
+            endif
+          enddo
+        enddo
+c .....................................................................
+c
+c ... campo de temperatura
+      else if(icod2 .eq. 3) then
+        do nel = 1, numel
+          ma   = ix(nen+1,nel)
+          type = ie(ma)
+          call setcell(type,sn,acod)
+          do j = 1, nshared
+            if( viz(j,nel) .lt. 0 ) then
+              if(pedge(j,nel) .eq. 1 ) then
+                no1      = ix(sn(1,j),nel)
+                no2      = ix(sn(2,j),nel)
+                do i = 1, ndf
+                  un(i,no1) = sedge(nst,j,nel)
+                  un(i,no2) = sedge(nst,j,nel)
+                enddo  
+              endif
+            endif
+          enddo
+        enddo
+      endif
+c .....................................................................
+c
+c ...
       return
       end
 c **********************************************************************

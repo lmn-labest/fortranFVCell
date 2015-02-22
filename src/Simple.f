@@ -1280,131 +1280,335 @@ c * p                 - campo de pressao                              *
 c * en                - campo de temperatura (n-1)                    *
 c * en0               - campo de temperatura (n-2)                    *
 c * ro                - campo de massa especifica (n-1,n-1,n-2)       *
+c * eddyVisc          - viscosidade turbulenta                        *
+c * yPlus             - distancia adimensional a parede               *
+c * cs                - paramentor dinamico de smagorinsky            *
 c * numel             - numero de elementos                           *
 c * ndm               - numero de dimensoes                           *
 c * istep             - passo de tempo                                *
 c * t                 - tempo de simulacao                            *
 c * load              - true|false                                    *
 c * sEnergy           - equacao de conservacao de energia             *
+c * fLes              - modelo de turbulencia LES                     *
 c * nout              -                                               *
 c * ----------------------------------------------------------------- *
 c * parametros de saida                                               *
 c * ----------------------------------------------------------------- *
 c * ----------------------------------------------------------------- *
 c *********************************************************************      
-      subroutine saveSimple(w,w0,p,en,en0,ro,nnode,numel,ndm
-     .                     ,istep,t,fileout,load,sEnergy,nout)
+      subroutine saveSimple(w       ,w0     ,p
+     .                     ,en      ,en0    ,ro 
+     .                     ,eddyVisc,yPlus  ,cs
+     .                     ,nnode   ,numel  ,ndm
+     .                     ,istep   ,t      ,fileout
+     .                     ,load    ,sEnergy,fLes
+     .                     ,nout)
       implicit none
       integer nnode,numel,ndm,istep
       integer nout
       integer i,j
       real(8) w(ndm,*),w0(ndm,*),p(*),en(*),en0(*)
+      real(8) eddyVisc(*),yPlus(*),cs(*)
       real(8) ro(3,*),t
       character*80 fileout
       character string*80
-      logical load,sEnergy
+      logical load,sEnergy,fLes,bin
+      bin = .false.
+c ... load
+      if(load) then
+c ... binario
+        if(bin) then
+          open(unit=nout         ,file=fileout         ,access='stream'
+     .        ,form='unformatted',convert='big_endian')
+c .....................................................................
+c
+c ... ASCII  
+        else
+          open(unit=nout,file=fileout,status='old')
+        endif
+c .....................................................................
+c
+c ... save
+      else  
+c ... binario
+        if(bin) then
+          open(unit=nout         ,file=fileout         ,access='stream'
+     .        ,form='unformatted',convert='big_endian')
+c .....................................................................
+c
+c ... ASCII
+        else   
+          open(unit=nout,file=fileout)
+        endif
+c .....................................................................
+      endif
+c .....................................................................
+c
 c ...
       if(load) then
-        open(unit=nout,file=fileout,status='old')
-      else  
-        open(unit=nout,file=fileout)
-      endif
+c ... binario
+        if(bin) then
+          read(nout) istep
+          read(nout) t 
 c .....................................................................
-c
-      if(load) then
-        read(nout,'(80a)') string
-        read(nout,'(i9)') istep
-        read(nout,'(80a)') string
-        read(nout,'(f20.8)') t 
+        else
+          read(nout,'(80a)') string
+          read(nout,'(i9)') istep
+          read(nout,'(80a)') string
+          read(nout,'(f20.8)') t 
+        endif
       else  
-        write(nout,'(a)')'passo de tempo'
-        write(nout,'(i9)') istep
-        write(nout,'(a)')'tempo '
-        write(nout,'(f20.8)') t     
+c ... binario
+        if(bin) then
+          write(nout) istep
+          write(nout) t 
+c .....................................................................
+        else
+          write(nout,'(a)')'passo de tempo'
+          write(nout,'(i9)') istep
+          write(nout,'(a)')'tempo '
+          write(nout,'(f20.8)') t   
+        endif  
       endif
+c .......................................................................
+c
 c ... velocidade      
       if(load) then
-        read(nout,'(80a)') string
-        do i=1, numel
-          read(nout,'(3f20.8)') (w(j,i),j = 1,ndm)
-        enddo
+        if(bin) then
+          do i=1, numel
+            read(nout) (w(j,i),j = 1,ndm)
+          enddo
+        else
+          read(nout,'(80a)') string
+          do i=1, numel
+            read(nout,'(3f36.16)') (w(j,i),j = 1,ndm)
+          enddo
+        endif
       else
-        write(nout,'(a)')'Velocidade (n)'
-        do i=1, numel
-          write(nout,'(3f20.8)') (w(j,i),j = 1,ndm)
-        enddo
+        if(bin) then
+          do i=1, numel
+            write(nout) (w(j,i),j = 1,ndm)
+          enddo
+        else
+          write(nout,'(a)')'Velocidade (n)'
+          do i=1, numel
+            write(nout,'(3f36.16)') (w(j,i),j = 1,ndm)
+          enddo
+        endif
       endif
 c .....................................................................
 c
-c ... velocidade
+c ... velocidade n-1
       if(load) then
-        read(nout,'(80a)') string
-        do i=1, numel
-          read(nout,'(3f20.8)') (w0(j,i),j = 1,ndm)
-        enddo
+        if(bin) then
+          do i=1, numel
+            read(nout) (w0(j,i),j = 1,ndm)
+          enddo
+        else
+          read(nout,'(80a)') string
+          do i=1, numel
+            read(nout,'(3f36.16)') (w0(j,i),j = 1,ndm)
+          enddo
+        endif
       else
-        write(nout,'(a)')'Velocidade (n-1)' 
-        do i=1, numel
-          write(nout,'(3f20.8)') (w0(j,i),j = 1,ndm)
-        enddo
+        if(bin) then
+          do i=1, numel
+            write(nout) (w0(j,i),j = 1,ndm)
+          enddo
+        else
+          write(nout,'(a)')'Velocidade (n-1)' 
+          do i=1, numel
+            write(nout,'(3f36.16)') (w0(j,i),j = 1,ndm)
+          enddo
+        endif
       endif      
 c .....................................................................
 c
 c ... pressao
       if(load) then
-        read(nout,'(80a)') string
-        do i=1, numel
-          read(nout,'(f20.8)') p(i)
-        enddo
-      else    
-        write(nout,'(a)')'pressao (n)'       
-        do i=1, numel
-          write(nout,'(f20.8)') p(i)
-        enddo
+        if(bin) then
+          do i=1, numel
+            read(nout) p(i)
+          enddo
+        else
+          read(nout,'(80a)') string
+          do i=1, numel
+            read(nout,'(f36.16)') p(i)
+          enddo
+        endif
+      else
+        if(bin) then    
+          do i=1, numel
+            write(nout) p(i)
+          enddo
+        else
+          write(nout,'(a)')'pressao (n)'       
+          do i=1, numel
+            write(nout,'(f36.16)') p(i)
+          enddo
+        endif
       endif
 c .....................................................................
 c
-c ... Temperatura
+c ... Temperatura n
       if(sEnergy) then         
         if(load) then
-          read(nout,'(80a)') string
-          do i=1, numel
-            read(nout,'(f20.8)') en(i)
-          enddo
+          if(bin) then
+            do i=1, numel
+              read(nout,*) en(i)
+            enddo
+          else
+            read(nout,'(80a)') string
+            do i=1, numel
+              read(nout,'(f36.16)') en(i)
+            enddo
+          endif
         else    
-          write(nout,'(a)')'en (n)'       
-          do i=1, numel
-            write(nout,'(f20.8)') en(i)
-          enddo
+          if(bin) then
+            do i=1, numel
+              write(nout) en(i)
+            enddo
+          else
+            write(nout,'(a)')'en (n)'       
+            do i=1, numel
+              write(nout,'(f36.16)') en(i)
+            enddo
+          endif
         endif
 c .....................................................................
 c
-c ... Temperatura    
+c ... Temperatura  n - 1  
         if(load) then
-          read(nout,'(80a)') string
-          do i=1, numel
-            read(nout,'(f20.8)') en0(i)
-          enddo
-        else 
-          write(nout,'(a)')'en (n-1)'        
-          do i=1, numel
-            write(nout,'(f20.8)') en0(i)
-          enddo
+          if(bin) then
+            do i=1, numel
+              read(nout) en0(i)
+            enddo
+          else
+            read(nout,'(80a)') string
+            do i=1, numel
+              read(nout,'(f36.16)') en0(i)
+            enddo
+          endif
+        else
+          if(bin) then
+            do i=1, numel
+              write(nout) en0(i)
+            enddo
+          else
+            write(nout,'(a)')'en (n-1)'        
+            do i=1, numel
+              write(nout,'(f36.16)') en0(i)
+            enddo
+          endif
         endif
-      endif 
+      endif
 c .....................................................................
 c
 c ... massa especefica    
       if(load) then
-        read(nout,'(80a)') string
-        do i=1, numel
-          read(nout,'(3f20.8)') ro(1,i),ro(2,i),ro(3,i)
-        enddo
-      else 
-        write(nout,'(a)')'ro      '        
-        do i=1, numel
-          write(nout,'(3f20.8)') ro(1,i),ro(2,i),ro(3,i)
-        enddo
+        if(bin) then
+          do i=1, numel
+            read(nout) ro(1,i),ro(2,i),ro(3,i)
+          enddo
+        else
+          read(nout,'(80a)') string
+          do i=1, numel
+            read(nout,'(3f36.16)') ro(1,i),ro(2,i),ro(3,i)
+          enddo
+        endif
+      else
+        if(bin) then
+          do i=1, numel
+            write(nout) ro(1,i),ro(2,i),ro(3,i)
+          enddo
+        else 
+          write(nout,'(a)')'ro      '        
+          do i=1, numel
+            write(nout,'(3f36.16)') ro(1,i),ro(2,i),ro(3,i)
+          enddo
+        endif
+      endif
+c .....................................................................
+c
+c ... LES                         
+      if(fLes) then 
+c ... viscosidade turbulenta
+        if(load) then
+          if(bin) then
+            do i=1, numel
+              read(nout) eddyVisc(i)
+            enddo
+          else
+            read(nout,'(80a)') string
+            do i=1, numel
+              read(nout,'(3f36.16)') eddyVisc(i)
+            enddo
+          endif
+        else 
+          if(bin) then
+            do i=1, numel
+              write(nout) eddyVisc(i)
+            enddo
+          else
+            write(nout,'(a)')'eddyVisc'        
+            do i=1, numel
+              write(nout,'(3f36.16)') eddyVisc(i)
+            enddo
+          endif
+        endif
+c .....................................................................
+c
+c ... yPlus                   
+        if(load) then
+          if(bin) then
+            do i=1, numel
+              read(nout) yPlus(i)
+            enddo
+          else
+            read(nout,'(80a)') string
+            do i=1, numel
+              read(nout,'(3f36.16)') yPlus(i)
+            enddo
+          endif
+        else 
+          if(bin) then
+            do i=1, numel
+              write(nout) yPlus(i)
+            enddo
+          else
+            write(nout,'(a)')'yPlus'        
+            do i=1, numel
+              write(nout,'(3f36.16)') yPlus(i)
+            enddo
+          endif
+        endif
+c .....................................................................
+c
+c ... Cs - paramentro dinamico de smagorinsky                   
+        if(load) then
+          if(bin) then
+            do i=1, numel
+              read(nout) cs(i)
+            enddo
+          else
+            read(nout,'(80a)') string
+            do i=1, numel
+              read(nout,'(3f36.16)') cs(i)
+            enddo
+          endif
+        else 
+          if(bin) then
+            do i=1, numel
+              write(nout) cs(i)
+            enddo
+          else
+            write(nout,'(a)')'cs'        
+            do i=1, numel
+              write(nout,'(3f36.16)') cs(i)
+            enddo
+          endif
+        endif
+c .....................................................................
       endif
 c .....................................................................
 c

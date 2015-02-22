@@ -22,14 +22,14 @@ c **********************************************************************
      .                   ,i_fnode,i_e,i_ie,i_w,i_t1,i_u1,i_u2,i_p,i_temp
      .                   ,i_num
      .                   ,nnode,numel,ndm,ndfF,ndfE,ndfT1,sTrans,sSimple
-     .                   ,sEnergy,nen,numat,nin)
+     .                   ,sEnergy,nen,nshared,numat,nin)
       use Malloc
       implicit none
       include 'elementos.fi'
       include 'string.fi'
       include 'simple.fi'
 c .....................................................................      
-      integer nnode,numel,ndm,ndfT1,ndfF,ndfE,nen,numat
+      integer nnode,numel,ndm,ndfT1,ndfF,ndfE,nen,nshared,numat
       logical sTrans,sSimple,sEnergy
 c ... ponteiros
       integer*8 i_x,i_ix
@@ -58,6 +58,7 @@ c ......................................................................
 c
 c ... 
       naux = - 1
+      nshared = 0 
 c ... Leitura dos parametros da malha: nnode,numel,numat,nen,ndf,ndm
       call parameters(nnode,numel,nen,ndfT1,ndfF,ndfE,ndm,numat,nin)
 c ......................................................................      
@@ -172,6 +173,7 @@ c ... Conetividades quad4:
 c
   500 continue
       print*,'Loading tria3 ...'
+      nshared   = max(nshared,3)
       ntria3(1) = 0
       call elconn(ia(i_ix),nen+1,3,ntria3(1),numel,nin)
       ntria3(2) = totnel + 1
@@ -184,6 +186,7 @@ c ... Conetividades quad4:
 c
   550 continue
       print*,'Loading quad4 ...'
+      nshared   = max(nshared,4)
       nquad4(1) = 0
       call elconn(ia(i_ix),nen+1,4,nquad4(1),numel,nin)
       nquad4(2) = totnel + 1
@@ -599,7 +602,7 @@ c **********************************************************************
 c ......................................................................
       if(newline) then
          line_col = 1
-         read(nin,'(200a1)',err = 200,end = 200) (line(j),j=1,200)
+         read(nin,'(200a1)',err = 200,end = 200) (line(j),j=1,maxstrl)
       endif
 c ......................................................................      
       do j = 1, maxstrl
