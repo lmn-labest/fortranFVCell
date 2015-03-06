@@ -21,9 +21,11 @@ c ----------------------------------------------------------------------
       character*80 prename,filein,fileout
 c ... ponteiros      
       integer*8 i_x,i_ix,i_w
-      integer*8 i_nelcon,i_nn,i_ls,i_lls,i_lw,i_du,i_b,i_mdf
+      integer*8 i_nelcon,i_ls,i_lls,i_lw,i_du,i_b,i_mdf
       integer*8 i_un,i_ie,i_e,i_md,i_w0,i_wP,i_temp
       integer*8 i_num,i_ro,i_sx
+c ... 
+      integer*8 i_nn,i_aux
 c ... transporte
       integer*8 i_t10,i_t1,i_bt10,i_bt1,i_gradT1,i_rCellt1,i_fluxlT1
       integer*8 i_adT1,i_alT1,i_auT1,i_iaT1,i_jaT1,i_idT1
@@ -2175,10 +2177,12 @@ c ... reconstrucao de gradiante u2
 c ......................................................................
 c
 c ...
-      i_nn        = alloc_8('nn      ',4,numel)
-      call devitoricStress(ia(i_gradU1),ia(i_gradU2),ia(i_nn),numel,ndm)
+      i_aux       = alloc_8('dStress ',4,numel)
+      i_nn        = alloc_8('ndStress',4,numel)
+      call devitoricStress(ia(i_gradU1),ia(i_gradU2),ia(i_aux),numel
+     .                    ,ndm)
 c    
-      call uformnode(ia(i_nn),ia(i_nn   ),ddum,ddum
+      call uformnode(ia(i_nn),ia(i_aux  ),ddum,ddum
      .             ,ia(i_x)  ,ia(i_mdf),ia(i_ix) ,ia(i_ie)
      .             ,ia(i_md) ,idum        ,ddum         ,ia(i_nelcon)
      .             ,nnode    ,numel
@@ -2190,12 +2194,13 @@ c ...
       fileout     = name(prename,istep,59)
       nCell = 'elDstress'
       nNod  = 'noDstress'
-      call write_res_vtk(ia(i_ix),ia(i_x),ia(i_nn),ia(i_un)
+      call write_res_vtk(ia(i_ix),ia(i_x),ia(i_aux),ia(i_nn)
      .                  ,nnode   ,numel
      .                  ,ndm     ,nen    ,ndm*ndm ,fileout
      .                  ,nCell   ,nNod   ,bvtk    ,4 
      .                  ,t       ,istep  ,nout) 
-      i_nn        = dealloc('nn      ')
+      i_nn        = dealloc('ndStress')
+      i_aux       = dealloc('dStress ')
 c ......................................................................
       goto 50
 c ......................................................................
@@ -2222,10 +2227,11 @@ c ... reconstrucao de gradiante u2
 c ......................................................................
 c
 c ...
-      i_nn        = alloc_8('nn      ',4,numel)
-      call stress(ia(i_p),ia(i_gradU1),ia(i_gradU2),ia(i_nn),numel,ndm)
+      i_nn        = alloc_8('dStress ',4,numel)
+      i_aux       = alloc_8('ndStress',4,numel)
+      call stress(ia(i_p),ia(i_gradU1),ia(i_gradU2),ia(i_aux),numel,ndm)
 c    
-      call uformnode(ia(i_nn),ia(i_nn   ),ddum,ddum
+      call uformnode(ia(i_nn),ia(i_aux)   ,ddum,ddum
      .             ,ia(i_x)  ,ia(i_mdf),ia(i_ix) ,ia(i_ie)
      .             ,ia(i_md) ,idum        ,ddum         ,ia(i_nelcon)
      .             ,nnode    ,numel
@@ -2237,12 +2243,13 @@ c ...
       fileout     = name(prename,istep,60)
       nCell = 'elStress'
       nNod  = 'noStress'
-      call write_res_vtk(ia(i_ix),ia(i_x),ia(i_nn),ia(i_un)
+      call write_res_vtk(ia(i_ix),ia(i_x),ia(i_aux),ia(i_un)
      .                  ,nnode   ,numel
      .                  ,ndm     ,nen    ,ndm*ndm ,fileout
      .                  ,nCell   ,nNod   ,bvtk    ,4 
      .                  ,t       ,istep  ,nout) 
-      i_nn        = dealloc('nn      ')
+      i_nn        = dealloc('nsStress')
+      i_aux       = dealloc('dStress ')
 c ......................................................................
       goto 50
 c ......................................................................
