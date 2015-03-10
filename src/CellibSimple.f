@@ -610,7 +610,7 @@ c **********************************************************************
       real*8 const,ZERO
       real*8 s11,s22,s12,modS
       logical bs
-      parameter (ZERO =  1.0d-60)
+      parameter (ZERO =  1.0d-7)
       parameter (eps   = 1.0d-14)
       parameter (const = 1.0d60)
 c ... 
@@ -1129,7 +1129,7 @@ c ... LES
       real*8 tFilterModSS(3),tFiltermodS,tFilterS(3),tFilterV(2)
       real*8 mLilly(3),leornadS(3)
       real*8 tFilterVv(3),volW,volWt,vel(2)
-      real*8,parameter :: Cs  = 0.1d0
+      real*8,parameter :: Cs  = 0.10d0
       real*8,parameter :: Cw  = 0.17d0
       real*8,parameter :: r23 = 0.666666666666667d0 ! 2.0/3.0
       real*8,parameter :: r13 = 0.333333333333333d0 ! 1.0/3.0
@@ -1142,7 +1142,7 @@ c .......................................................................
       integer ndm,nshared,i,j,icod,acod,idcell,sn(2,*),l
       real*8  const,ZERO
       logical bs
-      parameter (ZERO =  1.0d-4)
+      parameter (ZERO =  1.0d-7)
       parameter (eps   = 1.0d-14)
       parameter (const = 1.0d60)
 c ... 
@@ -1380,9 +1380,9 @@ c ... central-differencing scheme
      .          + grad1(1,idCell)*d(1,i) + grad1(2,idCell)*d(1,i)   
             du  = 0.5d0*(uc0 + uc1)              
             if(cv.lt.0.0d0) then
-              cvc = du - u(idCell)
+              cvc = u(idCell) - du
             else
-              cvc = du - u(i)
+              cvc = u(i) - du
             endif
 c .....................................................................
 c
@@ -1630,7 +1630,7 @@ c ...
       Mp(9) = p       ! saida de massa
 c ......................................................................
 c
-c ... Energia cinetica 
+c ... Energia cinetica resolvivel 
       Mp(10) = 0.5d0*specificMassA*vm*vm*area(idCell)
 c ......................................................................
 c
@@ -1651,6 +1651,12 @@ c     s22     =   grad2(2,idCell)                 ! du2/dx2
 c     s12     =   grad1(2,idCell)+grad2(1,idCell) ! du1/dx2 + du2/dx1
 c     modS   =   s11*s11+s22*s22+0.5d0*s12*s12         ! S:S
       Mp(12) =  (eddyVisc(idCell)/specificMassA)*modS
+c ......................................................................
+c
+c ... Energia cinetica nao-resolvivel 
+      s11     =   grad1(1,idCell)                 ! du1/dx1                 
+      s22     =   grad2(2,idCell)                 ! du2/dx2
+      Mp(13)  = - r23*eddyVisc(idCell)*area(idCell)*(s11 + s22)
 c ......................................................................
       return
 c ......................................................................

@@ -45,8 +45,9 @@ c ... simple
       integer*8 i_rCellU1,i_rCellU2,i_rCellPc,i_rCellE
       integer*8 i_div,i_mParameter
 c ... turbulence
-      integer*8 i_eddyVisc,i_wMean,i_cs,i_yPlus,disfiltro,transSubGrid
-      logical flagTurbulence,flagMeanVel
+      integer*8 i_eddyVisc,i_wMean,i_wRsm,i_cs,i_yPlus
+      real*8    disfiltro,transSubGrid,kEnergySub
+      logical   flagTurbulence,flagMeanVel,flagVelRsm
 c ... Coo
       integer*8 i_lin,i_col,i_aCoo
 c ......................................................................
@@ -142,17 +143,19 @@ c ... Macro-comandos disponiveis:
      .           'pgradT  ','pgradE  ','pbcoo   ','pcoo    ','les     ',
      .           'pvort2D ','bench   ','pEddyVis','pEstatic','MeanVel ',
      .           'underRo ','tolPcg  ','tolBiPcg','maxItSol','pDsmago ',
-     .           'pyPlus  ','pDStress','pStress ','        ','        ',
-     .           '        ','        ','        ','        ','        ',
+     .           'pyPlus  ','pDStrR  ','        ','        ','        ',
+     .           'pKeRes  ','pKeSub  ','pKeTot  ','velRsm  ','        ',
      .           '        ','        ','        ','        ','stop    '/
 c ----------------------------------------------------------------------
 c
 c ...
       bvtk    = .true.
       flagCoo = .false.
+      dt      = 0.0d0
 c ...
       flagTurbulence = .false.
       flagMeanVel    = .false.
+      flagVelRsm     = .false.
 c ...
       nmacro1 = 0 
       nmacro2 = 0 
@@ -339,6 +342,7 @@ c
       i_col        = 1
       i_aCoo       = 1
       i_wMean      = 1
+      i_wRsm       = 1
       i_eddyVisc   = 1
       i_cs         = 1
       i_yPlus      = 1
@@ -501,8 +505,8 @@ c ....................................................................
      .4600,4700,4800,4900,5000, !pgradT ,pgradE  ,pbcoo   ,pcoo    ,les     
      .5100,5200,5300,5400,5500, !pvort2D,bench   ,pEddyVis,pEstatic,MeanVel
      .5600,5700,5800,5900,6000, !underRo,tolPcg  ,tolBiPcg,maxItSol,pDsmago        
-     .6100,6200,6300,6400,6500, !pyPlus ,pDStress,pStress ,        ,        
-     .6600,6700,6800,6900,7000, !       ,        ,        ,        ,        
+     .6100,6200,6300,6400,6500, !pyPlus ,pDStrR  ,        ,        ,        
+     .6600,6700,6800,6900,7000, !pKeRes ,pKeSub  ,pKeTot  ,velRsm  ,        
      .7100,7200,7300,7400,7500)j!       ,        ,        ,        ,stop    
 c ----------------------------------------------------------------------
 c
@@ -838,6 +842,7 @@ c ... parametors iniciais
      .                    ,numel,ndm,nen,nen,ndfF,dt,7,1)
         call calParameter(ia(i_mParameter),ia(i_div),numel  ,cfl,re
      .                   ,kineticEnergy   ,disfiltro      ,transSubGrid
+     .                   ,kEnergySub                                    
      .                   ,prandtl         ,grashof,vol,massa0
      .                   ,fluxoM          ,dt       ,.false.)
         massa = massa0
@@ -1104,7 +1109,7 @@ c ...
      .    ,solverPc       ,solverE     ,solvTolPcg    ,solvTolBcg   
      .    ,maxItSol       ,noutSimple  ,itResSimplePlot,sEnergy  
      .    ,istep          ,cfl         ,re            ,kineticEnergy 
-     .    ,prandtl        ,disfiltro   ,transSubGrid 
+     .    ,prandtl        ,disfiltro   ,transSubGrid  ,kEnergySub
      .    ,grashof        ,vol         ,unsymPc       ,bs 
      .    ,prename        ,noutCoo     ,flagTurbulence,flagCoo)   
       simpleTime = get_time() - simpleTime
@@ -1113,6 +1118,10 @@ c
 c ... calcula a media temporal da velociadade
       if(flagMeanVel) then
         call meanVel(ia(i_wMean),ia(i_w),numel,ndm,t,dt,.false.)
+      endif
+c ... calcula a media quadrada media da velocidade (RSM)
+      if(flagVelRsm) then
+        call velRsm(ia(i_wRsm),ia(i_w),numel,ndm,t,dt,.false.)
       endif
 c ...................................................................... 
       goto 50
@@ -2011,7 +2020,8 @@ c
 c ......................................................................
  5400 continue
       print*, 'Macro PESTATIC'
-      call printStatistics(re          ,kineticEnergy,disfiltro
+      call printStatistics(re          ,kineticEnergy,kEnergySub
+     .                    ,disfiltro
      .                    ,transSubGrid,cfl          ,t
      .                    ,istep       ,prename      ,noutEst
      .                    ,flagEst)
@@ -2025,8 +2035,8 @@ c
 c ......................................................................
  5500 continue
       print*, 'Macro MEANVEL'
-      flagMeanVEl = .true.
-      i_wMean     = alloc_8('wMean   ',ndfF-1,numel)
+      flagMeanVel    = .true.
+      i_wMean        = alloc_8('wMean   ',ndfF-1,numel)
       call azero(ia(i_wMean) ,numel*(ndfF-1))
       goto 50
 c ......................................................................
@@ -2157,11 +2167,11 @@ c ......................................................................
 c
 c ......................................................................
 c
-c ... Macro-comando: PDSTRESS        
+c ... Macro-comando: PDSTRR          
 c
 c ......................................................................
  6200 continue
-      print*, 'Macro PDSTRESS'
+      print*, 'Macro PDSTRR'  
 c ...
       call guess(ia(i_u1),ia(i_u2),ia(i_w),numel,ndfF-1)
 c ... reconstrucao de gradiante u1
@@ -2179,8 +2189,9 @@ c
 c ...
       i_aux       = alloc_8('dStress ',4,numel)
       i_nn        = alloc_8('ndStress',4,numel)
-      call devitoricStress(ia(i_gradU1),ia(i_gradU2),ia(i_aux),numel
-     .                    ,ndm)
+      call devitoricStressResidual(ia(i_gradU1) ,ia(i_gradU2)
+     .                            ,ia(i_eddyVisc),ia(i_rO)
+     .                            ,ia(i_aux)     ,numel ,ndm)
 c    
       call uformnode(ia(i_nn),ia(i_aux  ),ddum,ddum
      .             ,ia(i_x)  ,ia(i_mdf),ia(i_ix) ,ia(i_ie)
@@ -2213,6 +2224,59 @@ c ......................................................................
  6300 continue
       print*, 'Macro PSTRESS'
 c ...
+c     call guess(ia(i_u1),ia(i_u2),ia(i_w),numel,ndfF-1)
+c ... reconstrucao de gradiante u1
+c     call gform(ia(i_u1),ia(i_gradU1),ia(i_fluxlU1),ia(i_x)
+c    .          ,ia(i_sedgeF)
+c    .          ,ia(i_e),ia(i_ls),ia(i_ie),ia(i_nelcon),ia(i_pedgeF)
+c    .          ,ia(i_ix),numel,ndm,nen,nen,1,ndfF,2,1,1)
+c ... reconstrucao de gradiante u2
+c     call gform(ia(i_u2),ia(i_gradU2),ia(i_fluxlU2),ia(i_x)
+c    .          ,ia(i_sedgeF)
+c    .          ,ia(i_e),ia(i_ls),ia(i_ie),ia(i_nelcon),ia(i_pedgeF)
+c    .          ,ia(i_ix),numel,ndm,nen,nen,1,ndfF,2,2,1)
+c ......................................................................
+c
+c ...
+c     i_nn        = alloc_8('dStress ',4,numel)
+c     i_aux       = alloc_8('ndStress',4,numel)
+c     call stress(ia(i_p),ia(i_gradU1),ia(i_gradU2),ia(i_aux),numel,ndm)
+c    
+c     call uformnode(ia(i_nn),ia(i_aux)   ,ddum,ddum
+c    .             ,ia(i_x)  ,ia(i_mdf),ia(i_ix) ,ia(i_ie)
+c    .             ,ia(i_md) ,idum        ,ddum         ,ia(i_nelcon)
+c    .             ,nnode    ,numel
+c    .             ,ndm      ,nen         ,1
+c    .             ,ndm*ndm  ,nshared     ,2            ,0)
+c ......................................................................
+c
+c ...
+c     fileout     = name(prename,istep,60)
+c     nCell = 'elStress'
+c     nNod  = 'noStress'
+c     call write_res_vtk(ia(i_ix),ia(i_x),ia(i_aux),ia(i_un)
+c    .                  ,nnode   ,numel
+c    .                  ,ndm     ,nen    ,ndm*ndm ,fileout
+c    .                  ,nCell   ,nNod   ,bvtk    ,4 
+c    .                  ,t       ,istep  ,nout) 
+c     i_nn        = dealloc('nsStress')
+c     i_aux       = dealloc('dStress ')
+c ......................................................................
+      goto 50
+c ......................................................................
+ 6400 continue
+ 6500 continue
+      goto 9999
+c ......................................................................
+c
+c ......................................................................
+c
+c ... Macro-comando: PKERES         
+c
+c ......................................................................
+ 6600 continue
+      print*, 'Macro PKERES'
+c ...
       call guess(ia(i_u1),ia(i_u2),ia(i_w),numel,ndfF-1)
 c ... reconstrucao de gradiante u1
       call gform(ia(i_u1),ia(i_gradU1),ia(i_fluxlU1),ia(i_x)
@@ -2227,38 +2291,152 @@ c ... reconstrucao de gradiante u2
 c ......................................................................
 c
 c ...
-      i_nn        = alloc_8('dStress ',4,numel)
-      i_aux       = alloc_8('ndStress',4,numel)
-      call stress(ia(i_p),ia(i_gradU1),ia(i_gradU2),ia(i_aux),numel,ndm)
+      i_aux       = alloc_8('ke      ',1,numel)
+      call specificKineticEnergy(ia(i_aux)     ,ia(i_w)
+     .                          ,ia(i_gradU1)  ,ia(i_gradU2)
+     .                          ,ia(i_eddyVisc),ia(i_rO)
+     .                          ,numel         ,ndm    ,1)
+c ......................................................................
 c    
-      call uformnode(ia(i_nn),ia(i_aux)   ,ddum,ddum
+c ...
+      call uformnode(ia(i_un),ia(i_aux  ),ddum,ddum
      .             ,ia(i_x)  ,ia(i_mdf),ia(i_ix) ,ia(i_ie)
      .             ,ia(i_md) ,idum        ,ddum         ,ia(i_nelcon)
      .             ,nnode    ,numel
      .             ,ndm      ,nen         ,1
-     .             ,ndm*ndm  ,nshared     ,2            ,0)
+     .             ,1        ,nshared     ,2            ,0)
 c ......................................................................
 c
 c ...
-      fileout     = name(prename,istep,60)
-      nCell = 'elStress'
-      nNod  = 'noStress'
-      call write_res_vtk(ia(i_ix),ia(i_x),ia(i_aux),ia(i_un)
-     .                  ,nnode   ,numel
-     .                  ,ndm     ,nen    ,ndm*ndm ,fileout
-     .                  ,nCell   ,nNod   ,bvtk    ,4 
-     .                  ,t       ,istep  ,nout) 
-      i_nn        = dealloc('nsStress')
-      i_aux       = dealloc('dStress ')
+      fileout     = name(prename,istep,61)
+      nCell = 'elkeRes'
+      nNod  = 'nokeRes'
+      call write_res_vtk(ia(i_ix),ia(i_x),ia(i_aux),ia(i_un),nnode
+     .                  ,numel
+     .                  ,ndm,nen,1,fileout,nCell,nNod ,bvtk,4,t,istep
+     .                  ,nout) 
+      i_aux       = dealloc('ke      ')
 c ......................................................................
       goto 50
 c ......................................................................
- 6400 continue
- 6500 continue
- 6600 continue
+c
+c ......................................................................
+c
+c ... Macro-comando:  PKESUB        
+c
+c ......................................................................
  6700 continue
+c ...
+      call guess(ia(i_u1),ia(i_u2),ia(i_w),numel,ndfF-1)
+c ... reconstrucao de gradiante u1
+      call gform(ia(i_u1),ia(i_gradU1),ia(i_fluxlU1),ia(i_x)
+     .          ,ia(i_sedgeF)
+     .          ,ia(i_e),ia(i_ls),ia(i_ie),ia(i_nelcon),ia(i_pedgeF)
+     .          ,ia(i_ix),numel,ndm,nen,nen,1,ndfF,2,1,1)
+c ... reconstrucao de gradiante u2
+      call gform(ia(i_u2),ia(i_gradU2),ia(i_fluxlU2),ia(i_x)
+     .          ,ia(i_sedgeF)
+     .          ,ia(i_e),ia(i_ls),ia(i_ie),ia(i_nelcon),ia(i_pedgeF)
+     .          ,ia(i_ix),numel,ndm,nen,nen,1,ndfF,2,2,1)
+c ......................................................................
+c
+c ...
+      i_aux       = alloc_8('ke      ',1,numel)
+      call specificKineticEnergy(ia(i_aux)     ,ia(i_w)
+     .                          ,ia(i_gradU1)  ,ia(i_gradU2)
+     .                          ,ia(i_eddyVisc),ia(i_rO)
+     .                          ,numel         ,ndm    ,2)
+c ......................................................................
+c    
+c ...
+      call uformnode(ia(i_un),ia(i_aux  ),ddum,ddum
+     .             ,ia(i_x)  ,ia(i_mdf),ia(i_ix) ,ia(i_ie)
+     .             ,ia(i_md) ,idum        ,ddum         ,ia(i_nelcon)
+     .             ,nnode    ,numel
+     .             ,ndm      ,nen         ,1
+     .             ,1        ,nshared     ,2            ,0)
+c ......................................................................
+c
+c ...
+      fileout     = name(prename,istep,62)
+      nCell = 'elkeSub'
+      nNod  = 'nokeSub'
+      call write_res_vtk(ia(i_ix),ia(i_x),ia(i_aux),ia(i_un),nnode
+     .                  ,numel
+     .                  ,ndm,nen,1,fileout,nCell,nNod ,bvtk,4,t,istep
+     .                  ,nout) 
+      i_aux       = dealloc('ke      ')
+c ......................................................................
+      goto 50
+c ......................................................................
+c
+c ......................................................................
+c
+c ... Macro-comando: PKET           
+c
+c ......................................................................
  6800 continue
+c ...
+      call guess(ia(i_u1),ia(i_u2),ia(i_w),numel,ndfF-1)
+c ... reconstrucao de gradiante u1
+      call gform(ia(i_u1),ia(i_gradU1),ia(i_fluxlU1),ia(i_x)
+     .          ,ia(i_sedgeF)
+     .          ,ia(i_e),ia(i_ls),ia(i_ie),ia(i_nelcon),ia(i_pedgeF)
+     .          ,ia(i_ix),numel,ndm,nen,nen,1,ndfF,2,1,1)
+c ... reconstrucao de gradiante u2
+      call gform(ia(i_u2),ia(i_gradU2),ia(i_fluxlU2),ia(i_x)
+     .          ,ia(i_sedgeF)
+     .          ,ia(i_e),ia(i_ls),ia(i_ie),ia(i_nelcon),ia(i_pedgeF)
+     .          ,ia(i_ix),numel,ndm,nen,nen,1,ndfF,2,2,1)
+c ......................................................................
+c
+c ...
+      i_aux       = alloc_8('ke      ',1,numel)
+      call specificKineticEnergy(ia(i_aux)     ,ia(i_w)
+     .                          ,ia(i_gradU1)  ,ia(i_gradU2)
+     .                          ,ia(i_eddyVisc),ia(i_rO)
+     .                          ,numel         ,ndm    ,3)
+c ......................................................................
+c    
+c ...
+      call uformnode(ia(i_un),ia(i_aux  ),ddum,ddum
+     .             ,ia(i_x)  ,ia(i_mdf),ia(i_ix) ,ia(i_ie)
+     .             ,ia(i_md) ,idum        ,ddum         ,ia(i_nelcon)
+     .             ,nnode    ,numel
+     .             ,ndm      ,nen         ,1
+     .             ,1        ,nshared     ,2            ,0)
+c ......................................................................
+c
+c ...
+      fileout     = name(prename,istep,63)
+      nCell = 'elkeTot'
+      nNod  = 'nokeTot'
+      call write_res_vtk(ia(i_ix),ia(i_x),ia(i_aux),ia(i_un),nnode
+     .                  ,numel
+     .                  ,ndm,nen,1,fileout,nCell,nNod ,bvtk,4,t,istep
+     .                  ,nout) 
+      i_aux       = dealloc('ke      ')
+c ......................................................................
+      goto 50
+c ......................................................................
+c
+c ......................................................................
+c
+c ......................................................................
+c
+c ... Macro-comando: PVELRSM        
+c
+c ......................................................................
  6900 continue
+      print*, 'Macro VELRSM'
+      flagVelRsm = .true.
+      i_wRsm     = alloc_8('wRsm    ',ndfF-1,numel)
+      call azero(ia(i_wRsm) ,numel*(ndfF-1))
+c ......................................................................
+      goto 50
+c ......................................................................
+c
+c ......................................................................
  7000 continue
  7100 continue
  7200 continue
@@ -2276,9 +2454,13 @@ c ......................................................................
  7590 continue
       print*, 'Salvando ...'       
       fileout = name(prename,0,30)
-      call saveSimple(ia(i_w),ia(i_w0),ia(i_p),ia(i_en),ia(i_en0)
-     .               ,ia(i_ro),nnode,numel,ndm,istep,t
-     .               ,fileout,.false.,sEnergy,noutSave)
+      call saveSimple(ia(i_w)       ,ia(i_w0)   ,ia(i_p)
+     .               ,ia(i_en)      ,ia(i_en0)  ,ia(i_ro)
+     .               ,ia(i_eddyVisc),ia(i_yPlus),ia(i_cs)
+     .               ,nnode         ,numel      ,ndm
+     .               ,istep         ,t          ,fileout
+     .               ,.false.       ,sEnergy    ,flagTurbulence
+     .               ,noutSave)
       print*, 'Salvo.'
 c ......................................................................        
  7500 continue
@@ -2316,6 +2498,33 @@ c ......................................................................
       endif
 c ......................................................................        
 c
+c ...
+      if(flagVelRsm) then
+        call velRsm(ia(i_wRsm),ia(i_w),numel,ndm,t,dt,.true.)
+c ...        
+        fileout     = name(prename,0,64)
+        i_nn        = alloc_8('nn      ',ndm,nnode)
+c ......................................................................
+c
+c ...      
+        call uformnode(ia(i_nn),ia(i_wRsm),ddum,ddum
+     .               ,ia(i_x)  ,ia(i_mdf),ia(i_ix) ,ia(i_ie)
+     .               ,ia(i_md) ,ia(i_pedgeF),ia(i_sedgeF) ,ia(i_nelcon)
+     .               ,nnode    ,numel
+     .               ,ndm      ,nen         ,ndfF
+     .               ,ndfF-1   ,nshared     ,2            ,1)
+c ......................................................................
+c
+c ...      
+        nCell = 'elVelRsm'
+        nNod  = 'noVelRsm'
+        call write_res_vtk(ia(i_ix),ia(i_x),ia(i_wRsm),ia(i_nn)
+     .                    ,nnode   ,numel  ,ndm,nen,ndfF-1,fileout
+     .                    ,nCell,nNod ,bvtk,7,t,istep,nout) 
+c ......................................................................
+        i_nn        = dealloc('nn      ')
+      endif
+c ......................................................................        
 c ...
       totaltime = get_time() - totaltime
  9999 continue

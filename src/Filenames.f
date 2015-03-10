@@ -174,6 +174,20 @@ c ......................................................................
         write(StrExtensao,'( I6 )') NumArq
         write(StrExtensao,'( A  )') adjustl(StrExtensao)
         StrExtensao='_pStress_'//trim(StrExtensao)//'.vtk'
+      elseif(code .eq. 61) then
+        write(StrExtensao,'( I6 )') NumArq
+        write(StrExtensao,'( A  )') adjustl(StrExtensao)
+        StrExtensao='_pker_'//trim(StrExtensao)//'.vtk'
+      elseif(code .eq. 62) then
+        write(StrExtensao,'( I6 )') NumArq
+        write(StrExtensao,'( A  )') adjustl(StrExtensao)
+        StrExtensao='_pkes_'//trim(StrExtensao)//'.vtk'
+      elseif(code .eq. 63) then
+        write(StrExtensao,'( I6 )') NumArq
+        write(StrExtensao,'( A  )') adjustl(StrExtensao)
+        StrExtensao='_pket_'//trim(StrExtensao)//'.vtk'
+      elseif(code .eq. 64) then
+        StrExtensao='_VelRsm.vtk'
       endif    
 c ................................................................
 c

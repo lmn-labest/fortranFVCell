@@ -128,7 +128,7 @@ c *********************************************************************
      .                  ,solverPc  ,solverE   ,solvTolPcg    ,solvTolBcg
      .                  ,maxIt    ,noutSimple,itResSimplePlot,sEnergy   
      .                  ,istep    ,cfl       ,reynalds       ,kEnergy 
-     .                  ,prandtl  ,disfiltro ,transSubGrid
+     .                  ,prandtl  ,disfiltro ,transSubGrid   ,kEnergySub
      .                  ,grashof  ,vol       ,unsymPc        ,bs
      .                  ,prename  ,noutCoo   ,flagTurbulence ,flagCoo)
 c...
@@ -175,7 +175,7 @@ c ...
       logical ResAbs,sEnergy,xMomentum,yMomentum,flagTurbulence
       integer i
 c ... variaveis
-      real(8) cfl,reynalds,prandtl,grashof,vol,kEnergy
+      real(8) cfl,reynalds,prandtl,grashof,vol,kEnergy,kEnergySub
       real(8) disfiltro,transSubGrid
       real(8) ZERO,kZero
       parameter (ZERO=1.0d-32)
@@ -216,6 +216,7 @@ c ... calculo de parametro por celula
      .                  ,ndf     ,dt     ,      7,  1)
       call calParameter(mP     ,div       ,numel         ,cfl ,reynalds
      .                 ,kEnergy,disfiltro,transSubGrid
+     .                 ,kEnergySub 
      .                 ,prandtl,grashof  ,vol   ,Massa   ,fluxoM
      .                 ,dt     ,tDinamico)
 c .....................................................................
@@ -835,6 +836,7 @@ c ... calculo de parametro por celula
      .                  ,ndf     ,dt     ,      7,  1)
       call calParameter(mP     ,div       ,numel         ,cfl ,reynalds
      .                 ,kEnergy,disfiltro,transSubGrid
+     .                 ,kEnergySub
      .                 ,prandtl,grashof  ,vol   ,Massa   ,fluxoM
      .                 ,dt     ,tDinamico)
 c .....................................................................
@@ -975,7 +977,7 @@ c * ----------------------------------------------------------------- *
 c * parametros de saida                                               *
 c * ----------------------------------------------------------------- *
 c * ----------------------------------------------------------------- *
-c *********************************************************************      
+c *********************************************************************   
       subroutine pressureGuess(p,pedge,sedge,numel,nshared,ndf)
       implicit none
       real(8) p(*),sedge(ndf,nshared+1,numel)
@@ -995,7 +997,7 @@ c * ----------------------------------------------------------------- *
 c * parametros de entrada :                                           *
 c * ----------------------------------------------------------------- *
 c * p        - campo de pressao                                       *
-c * gradU1   - gradiente da celociade u1                              *
+c * gradU1   - gradiente da velociade u1                              *
 c * gradU2   - gradiente da velociade u2                              *
 c * eddyVisc - viscosidade turbulenta                                 *
 c * numel    - numero de elementos                                    *
@@ -1108,6 +1110,7 @@ c * kEnrgy       - energia cinetica total                             *
 c * disfiltro    - dissipaco de energia resolvivel pelas tensoes      *
 c * viscosas                                                          *   
 c * transSubGrid - tranferencia de enrgia para o subgrid              *
+c * kEnergySub   - energia cinetica escala nao resolvivel             *
 c * pr           - Prandtl number                                     *
 c * gr           - Grashof number                                     *        
 c * vol          - volume total do dominio                            *
@@ -1118,12 +1121,13 @@ c * ----------------------------------------------------------------- *
 c *********************************************************************
       subroutine calParameter(mP       ,div          ,numel,cfl,re
      .                       ,kEnergy  ,disfiltro    ,transSubGrid
+     .                       ,kEnergySub                             
      .                       ,pr       ,gr           ,vol 
      .                       ,massa   ,fM            ,dt
      .                       ,deltaDinamico)
       implicit none
       real(8) mP(20,numel),div(*),vol,dt,dtm,dtm1
-      real(8) cfl,re,kEnergy,disfiltro,transSubGrid
+      real(8) cfl,re,kEnergy,disfiltro,transSubGrid,kEnergySub 
       real(8) pr,gr
       real(8) massa,fM,massInput,massOut
       logical deltaDinamico
@@ -1141,7 +1145,8 @@ c ...
       kEnergy      = mP(10,1)
       disfiltro    = mP(11,1)
       transSubGrid = mP(12,1)
-      dtm  = min(dt,0.9d0*(dsqrt(mP(3,1))/mP(4,1)))
+      kEnergySub   = mP(13,1)
+      dtm   = min(dt,0.9d0*(dsqrt(mP(3,1))/mP(4,1)))
       dtm1  = min(dt,dabs(1/div(1)))
 c .....................................................................
 c
@@ -1169,6 +1174,8 @@ c ...
         disfiltro    = disfiltro    + mP(11,i)
 c ...
         transSubGrid = transSubGrid + mP(12,i)
+c ...
+        kEnergySub   =  kEnergySub  + mP(13,i)
 c ... deltaT que satisfaca o cfl
         dtm    = min(dtm,0.9d0*(dsqrt(mP(3,i))/mP(4,i)))
 c ... continuidade
@@ -1186,6 +1193,7 @@ c .....................................................................
 c
 c ...
       kEnergy      = kEnergy/(massa)
+      kEnergySub   = kEnergySub/(massa)
       disfiltro    = disfiltro/vol
       transSubGrid = transSubGrid/vol
 c ...

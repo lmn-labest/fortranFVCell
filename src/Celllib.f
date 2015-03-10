@@ -877,23 +877,30 @@ c * Parametros de entrada:                                             *
 c * -------------------------------------------------------------------*
 c * gradU1       - gradiente da variavel u1                            *
 c * gradU2       - gradiente da variavel u2                            *
+c * eddyVisc     - viscosidade turbulenta                              *
+c * ro           - massa especifica                                    *
 c * dStress      - indefinido                                          *
 c * n            - dimensoes do vetores                                *
 c * ndm          - numero dimensoes espaciais                          *
 c * -------------------------------------------------------------------*
 c * Parmetros de saida:                                                *
 c * -------------------------------------------------------------------*
-c * dStress      - tensor desviador das tensoes                        *
+c * dStress      - tensor desviador das tensoes residuais              *
 c **********************************************************************
-      subroutine devitoricStress(gradU1,gradU2,dStress,n,ndm)
+      subroutine devitoricStressResidual(gradU1 ,gradU2,eddyVisc,ro
+     .                                  ,dStress,n     ,ndm)
       implicit none
       real*8 gradU1(ndm,*),gradU2(ndm,*),dStress(ndm*ndm,*)
+      real*8 ro(3,*),eddyVisc(*)
+      real*8 kinematicVisc    
       integer ndm,n,i
       do i = 1, n
-        dStress(1,i) = gradU1(1,i)                    ! du1/dx1
-        dStress(2,i) = 0.5d0*(gradU1(2,i)+gradU2(1,i))!du1/dx2+du2/dx1
-        dStress(3,i) = gradU2(2,i)                    ! du2/dx2 
-        dStress(4,i) = dStress(2,i)                   !du2/dx1+du1/dx2
+        kinematicVisc = -2.0d0*eddyVisc(i)/ro(3,i)
+        dStress(1,i)  = kinematicVisc*gradU1(1,i)      ! du1/dx1
+        dStress(2,i)  = 0.5d0*kinematicVisc
+     .                *(gradU1(2,i)+gradU2(1,i))       !du1/dx2+du2/dx1
+        dStress(3,i)  = kinematicVisc*gradU2(2,i)      ! du2/dx2 
+        dStress(4,i)  = dStress(2,i)                   !du2/dx1+du1/dx2
       enddo
       return
       end
@@ -915,16 +922,78 @@ c * Parmetros de saida:                                                *
 c * -------------------------------------------------------------------*
 c * s            - tensor das tensoes                                  *
 c **********************************************************************
-      subroutine stress(p,gradU1,gradU2,s,n,ndm)
+c     subroutine stress(p,gradU1,gradU2,s,n,ndm)
+c     implicit none
+c     real*8 gradU1(ndm,*),gradU2(ndm,*),s(ndm*ndm,*),p(*)
+c     integer ndm,n,i
+c     do i = 1, n
+c       s(1,i) = p(i) + gradU1(1,i)             !p + du1/dx1
+c       s(2,i) = 0.5d0*(gradU1(2,i)+gradU2(1,i))!du1/dx2+du2/dx1
+c       s(3,i) = p(i) + gradU2(2,i)             !p + du2/dx2 
+c       s(4,i) = s(2,i)                         !du2/dx1+du1/dx2
+c     enddo
+c     return
+c     end
+c ***********************************************************************   
+c
+c **********************************************************************
+c * ENERGIA: calculo do tensor                                         *
+c * ------------------------------------------------------------------ *
+c * Parametros de entrada:                                             *
+c * -------------------------------------------------------------------*
+c * e            - nao definido                                        *
+c * w            - campo de velocidade                                 *
+c * gradU1       - gradiente da variavel u1                            *
+c * gradU2       - gradiente da variavel u2                            *
+c * eddyVisc     - viscosidade turbulenta                              *
+c * ro           - massa especifica                                    *
+c * n            - dimensoes do vetores                                *
+c * ndm          - numero dimensoes espaciais                          *
+c * icod         - 1 - energia cinetica da escala resolvivel           *
+c *                2 - energia cinetica da escala nao-resolvivel       *
+c *                3 - energia Total                                   *
+c * -------------------------------------------------------------------*
+c * Parmetros de saida:                                                *
+c * -------------------------------------------------------------------*
+c * s            - energia                                             *
+c **********************************************************************
+      subroutine specificKineticEnergy(e ,w   ,gradU1,gradU2,eddyVisc
+     .                                ,ro,  n ,ndm,icod)
       implicit none
-      real*8 gradU1(ndm,*),gradU2(ndm,*),s(ndm*ndm,*),p(*)
-      integer ndm,n,i
-      do i = 1, n
-        s(1,i) = p(i) + gradU1(1,i)             !p + du1/dx1
-        s(2,i) = 0.5d0*(gradU1(2,i)+gradU2(1,i))!du1/dx2+du2/dx1
-        s(3,i) = p(i) + gradU2(2,i)             !p + du2/dx2 
-        s(4,i) = s(2,i)                         !du2/dx1+du1/dx2
-      enddo
+      real*8 gradU1(ndm,*),gradU2(ndm,*),w(ndm,*)
+      real*8 e(*),wfn,ro(3,*),eddyVisc(*)
+      real*8 kinematicVisc    
+      real*8, parameter :: r43 = 1.33333333333333d0
+      integer ndm,n,i,icod
+c ... energia cinetica especifica resolvivel
+      if(icod .eq. 1 ) then
+        do i = 1, n
+          wfn    = w(1,i)*w(1,i) +  w(2,i)*w(2,i)
+          e(i)   = 0.5d0*wfn
+        enddo
+c .....................................................................
+c
+c ... energia cinetica residual
+      else if(icod .eq. 2) then
+c ...            
+        do i = 1, n
+          kinematicVisc  = eddyVisc(i)/ro(3,i)
+          e(i)   = -r43*kinematicVisc*(gradU1(1,i) + gradU2(2,i))
+        enddo
+c .......................................................................
+c
+c ... energia cinetica total
+      else if(icod .eq. 3) then
+c ... energia cinetica especifica resolvivel
+        do i = 1, n
+          wfn    = w(1,i)*w(1,i) +  w(2,i)*w(2,i)
+          e(i)   = 0.5d0*wfn
+c ...                                         
+          kinematicVisc  = eddyVisc(i)/ro(3,i)
+          e(i)   = e(i) - r43*kinematicVisc*(gradU1(1,i) + gradU2(2,i))
+        enddo
+      endif
+c .......................................................................
       return
       end
 c ***********************************************************************   
@@ -949,7 +1018,7 @@ c **********************************************************************
       subroutine wallModel(yPlus,stressW,viscosity,specificMass,vt,dy
      .                    ,nel,codWall)
       implicit none
-      real*8 stressW,stressW0
+      real*8 stressW
       real*8 temp1,temp2,temp3,onePlusB
       real*8 yPlus3,yPlus4
       real*8 uPlusL,uPlusT
@@ -966,8 +1035,12 @@ c ... Kader - 1981
       real*8 , parameter :: bWerner   = 0.142857143d0   
       integer, parameter :: maxIt     =  5000
       integer i,nel,codWall
+c ... sem modelo de parede
+      if( codWall .eq. 0 ) then
+        yPlus    = 0.0d0
+        stressW  =  viscosity*vt/dy
 c ... universal near wall model
-      if( codWall .eq. 1 ) then
+      else if( codWall .eq. 1 ) then
 c ... wall shear stress (viscosidade)
         stressW  =  viscosity*vt/dy
 c ... friction velocity
@@ -994,7 +1067,7 @@ c ...
         print*,i,dabs(fu-fu0),nel
         stop
   100   continue
-        yPlus = specificMass*fu*dy/viscosity
+        yPlus    = specificMass*fu*dy/viscosity
         stressW  = specificMass*(vt/uPLus)*(vt/uPLus)          
 c .....................................................................
 c
@@ -1104,12 +1177,14 @@ c
         print*,i,dabs(fu-fu0),nel
         stop
   300   continue
-        yPlus = specificMass*fu*dy/viscosity
+        yPlus    = specificMass*fu*dy/viscosity
         stressW  =  specificMass*fu*fu
       endif
 c ......................................................................
 c
 c ...
+c      if(nel .eq. 80) print*,nel,fu,yPlus,dy
+c      print*,nel,fu
       return
       end
 c ***********************************************************************   

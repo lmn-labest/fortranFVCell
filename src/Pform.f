@@ -2150,7 +2150,7 @@ c .....................................................................
 c *********************************************************************
 c
 c *********************************************************************
-c * menVel : Media temporal das velocidades                           *
+c * MEANVEL : Media temporal das velocidades                          *
 c * ----------------------------------------------------------------- *
 c * parametros de entrada :                                           *
 c * ----------------------------------------------------------------- *
@@ -2185,6 +2185,49 @@ c *********************************************************************
         do i = 1, numel
           do j = 1, ndm
             wMean(j,i) = wMean(j,i) + w(j,i)*dt
+          enddo
+        enddo
+      endif
+      return
+      end
+c *********************************************************************
+c
+c *********************************************************************
+c * VELRSM : Media temporal rsm das velocidades                       *
+c * ----------------------------------------------------------------- *
+c * parametros de entrada :                                           *
+c * ----------------------------------------------------------------- *
+c * wRsm  - nao definido                                              *
+c * w     - velocidade instantanea                                    *
+c * numel - numero de elementos                                       *
+c * ndm   - numero de dimensoes                                       *
+c * t     - tempo total                                               *
+c * dt    - delta temporal                                            *
+c * fend  - true - finaliza a media                                   *
+c *         false- calcula a integral temporal                        *
+c * ----------------------------------------------------------------- *
+c * parametros de saida                                               *
+c * ----------------------------------------------------------------- *
+c * wRsm  - media rsm temporal das velocidade     (fend = .true.)     *
+c * wRsm  - integral rsm temporal das velocidades (fend = .false.)    *
+c * ----------------------------------------------------------------- *
+c *********************************************************************
+      subroutine velRsm(wRsm,w,numel,ndm,t,dt,fend)
+      implicit none
+      real(8) w(ndm,*),wRsm(ndm,*),dt,t
+      integer ndm,numel
+      integer i,j
+      logical fend
+      if(fend) then
+        do i = 1, numel
+          do j = 1, ndm
+            wRsm(j,i) = dsqrt(wRsm(j,i)/t)
+          enddo
+        enddo
+      else
+        do i = 1, numel
+          do j = 1, ndm
+            wRsm(j,i) = wRsm(j,i) + w(j,i)*w(j,i)*dt
           enddo
         enddo
       endif

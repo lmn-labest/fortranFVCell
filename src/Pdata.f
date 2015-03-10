@@ -120,7 +120,8 @@ c * Parametro de Entrada :                                           *
 c * ---------------------------------------------------------------- *
 c * cfl          - numero de courant                                 *
 c * re           - numero de reynalds                                *
-c * kEnrgy       - energia cinetica total                            *
+c * kEnergy      - energia resolvivel                                *
+c * kEnergySub   - energia nao resolvivel                            *
 c * disfiltro    - dissipaco de energia resolvivel pelas tensoes     *
 c * viscosas                                                         *   
 c * transSubGrid - tranferencia de enrgia para o subgrid             *
@@ -132,13 +133,14 @@ c * open         - abertura de um novo arquivo .true.                *
 c * -----------------------------------------------------------------*
 c *  Parametro de Saida :                                            *
 c ********************************************************************
-      subroutine printStatistics(re          ,energy,disfiltro
+      subroutine printStatistics(re          ,energy,kEnergySub
+     .                          ,disfiltro
      .                          ,transSubGrid,cfl   ,t
      .                          ,istep,prename,nout,open)
       implicit none
 c ===        
       integer istep,nout
-      real*8 t,re,energy,cfl,transSubGrid,disfiltro
+      real*8 t,re,energy,cfl,transSubGrid,disfiltro,kEnergySub
       character*80 fileout,prename,name
       logical open
 c =====================================================================        
@@ -152,14 +154,16 @@ c ... reabre o arquivo e add uma nova linha
       else
         fileout     = name(prename,0,55)
         open(nout, file=fileout ,action= 'write')
-        write(nout,'(a)')
-     . '#Passo Tempo(s) Reynold Energia cfl disFiltro transSubGrid'
+        write(nout,'(a,a)')
+     . '#Passo Tempo(s) Reynold clf EnergiaRes EnergiaSub ',
+     . ' disFiltro transSubGrid'
         open = .true.
       endif
 c =====================================================================        
 c
 c === 
-      write(nout,'(i9,f16.6,9f20.10)')istep,t,re,energy,cfl
+      write(nout,'(i9,f16.6,9f20.10)')istep,t,re,cfl
+     .            ,energy   ,kEnergySub
      .            ,disfiltro,transSubGrid
       close(nout)
       return
