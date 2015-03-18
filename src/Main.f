@@ -45,9 +45,9 @@ c ... simple
       integer*8 i_rCellU1,i_rCellU2,i_rCellPc,i_rCellE
       integer*8 i_div,i_mParameter
 c ... turbulence
-      integer*8 i_eddyVisc,i_wMean,i_wRsm,i_cs,i_yPlus
+      integer*8 i_eddyVisc,i_wMean,i_wRsm,i_wVar,i_cs,i_yPlus
       real*8    disfiltro,transSubGrid,kEnergySub
-      logical   flagTurbulence,flagMeanVel,flagVelRsm
+      logical   flagTurbulence,flagMeanVel,flagVelRsm,flagVelVar
 c ... Coo
       integer*8 i_lin,i_col,i_aCoo
 c ......................................................................
@@ -144,7 +144,7 @@ c ... Macro-comandos disponiveis:
      .           'pvort2D ','bench   ','pEddyVis','pEstatic','MeanVel ',
      .           'underRo ','tolPcg  ','tolBiPcg','maxItSol','pDsmago ',
      .           'pyPlus  ','pDStrR  ','        ','        ','        ',
-     .           'pKeRes  ','pKeSub  ','pKeTot  ','velRsm  ','        ',
+     .           'pKeRes  ','pKeSub  ','pKeTot  ','velRsm  ','velVar  ',
      .           '        ','        ','        ','        ','stop    '/
 c ----------------------------------------------------------------------
 c
@@ -156,6 +156,7 @@ c ...
       flagTurbulence = .false.
       flagMeanVel    = .false.
       flagVelRsm     = .false.
+      flagVelVar     = .false.
 c ...
       nmacro1 = 0 
       nmacro2 = 0 
@@ -343,6 +344,7 @@ c
       i_aCoo       = 1
       i_wMean      = 1
       i_wRsm       = 1
+      i_wVar       = 1
       i_eddyVisc   = 1
       i_cs         = 1
       i_yPlus      = 1
@@ -506,7 +508,7 @@ c ....................................................................
      .5100,5200,5300,5400,5500, !pvort2D,bench   ,pEddyVis,pEstatic,MeanVel
      .5600,5700,5800,5900,6000, !underRo,tolPcg  ,tolBiPcg,maxItSol,pDsmago        
      .6100,6200,6300,6400,6500, !pyPlus ,pDStrR  ,        ,        ,        
-     .6600,6700,6800,6900,7000, !pKeRes ,pKeSub  ,pKeTot  ,velRsm  ,        
+     .6600,6700,6800,6900,7000, !pKeRes ,pKeSub  ,pKeTot  ,velRsm  ,velVar  
      .7100,7200,7300,7400,7500)j!       ,        ,        ,        ,stop    
 c ----------------------------------------------------------------------
 c
@@ -2438,6 +2440,23 @@ c ......................................................................
 c
 c ......................................................................
  7000 continue
+      print*, 'Macro VELVAR'
+      flagVelVar  = .true.
+      if(flagVelRsm .eqv. .false. ) then
+        flagVelRsm  = .true.
+        i_wRsm     = alloc_8('wRsm    ',ndfF-1,numel)
+        call azero(ia(i_wRsm) ,numel*(ndfF-1))
+      endif
+      if(flagVelRsm .eqv. .false. ) then
+        flagMeanVel = .true.
+        i_wMean        = alloc_8('wMean   ',ndfF-1,numel)
+        call azero(ia(i_wMean) ,numel*(ndfF-1))
+      endif   
+      i_wVar      = alloc_8('wVar    ',ndfF-1,numel)
+      call azero(ia(i_wRsm) ,numel*(ndfF-1))
+c ......................................................................
+      goto 50
+c ......................................................................
  7100 continue
  7200 continue
  7300 continue
@@ -2470,7 +2489,7 @@ c ...
       close(nin)
 c ......................................................................        
 c
-c ...
+c ... velocidade media
       if(flagMeanVel) then
         call meanVel(ia(i_wMean),ia(i_w),numel,ndm,t,dt,.true.)
 c ...        
@@ -2498,7 +2517,7 @@ c ......................................................................
       endif
 c ......................................................................        
 c
-c ...
+c ... velocidade rsm (root mean square)
       if(flagVelRsm) then
         call velRsm(ia(i_wRsm),ia(i_w),numel,ndm,t,dt,.true.)
 c ...        
@@ -2525,6 +2544,33 @@ c ......................................................................
         i_nn        = dealloc('nn      ')
       endif
 c ......................................................................        
+c
+c ... variancia do campo de velocidade
+      if(flagVelVar) then
+        call velVariancie(ia(i_wVar),ia(i_wRsm),ia(i_wMean),numel,ndm)
+c ...        
+        fileout     = name(prename,0,65)
+        i_nn        = alloc_8('nn      ',ndm,nnode)
+c ......................................................................
+c
+c ...      
+        call uformnode(ia(i_nn),ia(i_wVar),ddum,ddum
+     .               ,ia(i_x)  ,ia(i_mdf),ia(i_ix) ,ia(i_ie)
+     .               ,ia(i_md) ,ia(i_pedgeF),ia(i_sedgeF) ,ia(i_nelcon)
+     .               ,nnode    ,numel
+     .               ,ndm      ,nen         ,ndfF
+     .               ,ndfF-1   ,nshared     ,2            ,1)
+c ......................................................................
+c
+c ...      
+        nCell = 'elVelVar'
+        nNod  = 'noVelVar'
+        call write_res_vtk(ia(i_ix),ia(i_x),ia(i_wVar),ia(i_nn)
+     .                    ,nnode   ,numel  ,ndm,nen,ndfF-1,fileout
+     .                    ,nCell,nNod ,bvtk,7,t,istep,nout) 
+c ......................................................................
+        i_nn        = dealloc('nn      ')
+      endif
 c ...
       totaltime = get_time() - totaltime
  9999 continue

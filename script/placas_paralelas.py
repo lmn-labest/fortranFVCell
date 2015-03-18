@@ -68,10 +68,10 @@ def main(argv):
 
 #parede superior
   nElm0 = (nl-1)*(nh-1) - (nl -2)
-  f.write("%9d %2d %2d %2d %2d %2d\n"%(nElm0,0,0,5,2,0))
-  for i in range(1,nl-2):
-    f.write("%9d %2d %2d %2d %2d %2d\n"%(nElm0+i,0,0,5,0,0))
-  f.write("%9d %2d %2d %2d %2d %2d\n"%((nl-1)*(nh-1),0,3,5,0,0))
+  f.write("%9d %2d %2d %2d %2d %2d\n"%(nElm0,0,0,0,2,0))
+# for i in range(1,nl-2):
+#   f.write("%9d %2d %2d %2d %2d %2d\n"%(nElm0+i,0,0,5,0,0))
+  f.write("%9d %2d %2d %2d %2d %2d\n"%((nl-1)*(nh-1),0,3,0,0,0))
 
 #parede esquerda
   for i in range(1,nh-2):
@@ -96,7 +96,7 @@ def main(argv):
          ,0,0,0
          ,0,0,0
          ,0,0,0
-         ,2.0,0,0
+         ,1.0,0,0
          ,0,0,0))
 # ...
   for i in range(1,nh-2):
@@ -111,7 +111,7 @@ def main(argv):
            ,0,0,0
            ,0,0,0
            ,0,0,0
-           ,2.0,0,0
+           ,1.0,0,0
            ,0,0,0))
 # ...
   nElm0 = (nl-1)*(nh-1) - (nl -2)
@@ -126,7 +126,7 @@ def main(argv):
            ,0,0,0
            ,0,0,0
            ,0,0,0
-           ,2.0,0,0
+           ,1.0,0,0
            ,0,0,0))
 # for i in range(1,nl-2):
 #   f.write("%9d " 

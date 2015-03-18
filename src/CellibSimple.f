@@ -435,7 +435,7 @@ c ... funcao de limatacao do fluxo para o termo advectivo
 c .....................................................................
 c
 c
-c .. F = dt*u0*V
+c .. F = u0*V/dt
   300 continue
       m    = ro(2,idCell)*cc*area(idCell)/dt
       p    = m*u(idCell)
@@ -943,7 +943,7 @@ c ... funcao de limatacao do fluxo para o termo advectivo
       return
 c .....................................................................
 c
-c .. F = dt*u0*V
+c .. F = u0*V/dt
   300 continue
       m    = k(2,idCell)*cc*area(idCell)/dt
       p    = m*u(idCell)
@@ -1129,7 +1129,7 @@ c ... LES
       real*8 tFilterModSS(3),tFiltermodS,tFilterS(3),tFilterV(2)
       real*8 mLilly(3),leornadS(3)
       real*8 tFilterVv(3),volW,volWt,vel(2)
-      real*8,parameter :: Cs  = 0.10d0
+      real*8,parameter :: Cs  = 0.167d0
       real*8,parameter :: Cw  = 0.17d0
       real*8,parameter :: r23 = 0.666666666666667d0 ! 2.0/3.0
       real*8,parameter :: r13 = 0.333333333333333d0 ! 1.0/3.0
@@ -1143,7 +1143,7 @@ c .......................................................................
       real*8  const,ZERO
       logical bs
       parameter (ZERO =  1.0d-7)
-      parameter (eps   = 1.0d-14)
+      parameter (eps   = 1.0d-16)
       parameter (const = 1.0d60)
 c ... 
 c ... 1 - UD - upwind de primeira ordem
@@ -1187,7 +1187,8 @@ c ...
 c ... velocidade tangencial a face
               wfn = dabs(w(1,idCell)*eta(1,i) + w(2,idCell)*eta(2,i))
               if(wfn .ne. 0.0d0) then
-                call wallModel(yPlus(i)     ,stressW(i),viscosity
+                viscEf1 = viscosity 
+                call wallModel(yPlus(i)     ,stressW(i),viscEf1
      .                        ,specificMassA,wfn,ca(i),nel,wallModelF)
               endif
             endif
@@ -1232,9 +1233,10 @@ c     da celula fantasmas)
 c ... pressao prescrita            
           else if(pedge(i) .eq. 3 .or. pedge(i) .eq. 4) then
             ug(i) = u(idCell)
-c ... tensao na parede (         
+c ... tensao na parede          
           else if(pedge(i) .eq. 5) then
-            ug(i) = u(idCell) - 2.0d0*ca(i)*sedge(iws2,i)/viscosity 
+            viscEf1 = viscosity 
+            ug(i)   = u(idCell) - 2.0d0*ca(i)*sedge(iws2,i)/viscEf1 
           endif
         else
           do j = 1, ndm
@@ -1265,7 +1267,8 @@ c ...
 c ... condicao de contorno      
         if( viznel .lt. 0) then
           a(i) = 0.d0
-          ap   = viscosity*meta(i)
+          viscEf1 = viscosity + eddyVisc(idCell)
+          ap      = viscEf1*meta(i)
 c ... termos viscosos
           if(iws2 .eq. 1) then
             p = p + ap*(grad1(iws2,idCell)*n(1,i) 
@@ -1304,7 +1307,8 @@ c             print*,yPlus,stressW,w(iws2,idCell),wfn,eta(iws2,i),nel
             p  = p + stressW(i)
 c ... parade movel 
           else if(pedge(i) .eq. 1) then
-            ap = viscosity*meta(i)/ca(i)
+            viscEf1 = viscosity + eddyVisc(idCell)
+            ap = viscEf1*meta(i)/ca(i)
             sp = sp + ap
             p  = p  + ap*sedge(iws2,i)
 c ... velocidade prescrita
@@ -1437,7 +1441,7 @@ c ... termos nao lineares da viscosidade
           gf(2) = (1.0d0-alpha)*grad2(iws2,idcell) 
      .          +        alpha *grad2(iws2,i)
           if( iws2 .eq. 1) then
-            p     = p + kf*meta(i)*(gf(1)*n(1,i)+ gf(2)*n(2,i))
+            p     = p + kf*meta(i)*(gf(1)*n(1,i) + gf(2)*n(2,i))
           else if(iws2 .eq. 2 ) then
             p     = p + kf*meta(i)*(gf(1)*n(2,i) + gf(2)*n(1,i))
           endif
@@ -1540,7 +1544,7 @@ c ... funcao de limatacao do fluxo para o termo advectivo
       return
 c .....................................................................
 c
-c .. F = dt*u0*V
+c .. F = u0*V/dt
   300 continue
       m    = k(2,idCell)*cc*area(idCell)/dt
       p    = m*u(idCell)
@@ -1570,8 +1574,9 @@ c ... cfl number
 c .....................................................................
 c
 c ... Reynolds number
+      viscEf1 = viscosity+eddyVisc(idCell) 
       re = specificMassA*vm*dsqrt(area(idcell))
-      re = re/(viscosity+eddyVisc(idCell))
+      re = re/viscEf1
       Mp(2) = re               
 c .....................................................................
 c
@@ -1636,11 +1641,12 @@ c ......................................................................
 c
 c ... dissipacao de energia da escala resolvivel
 c ... S:S - contracao do tensor de tensoes
+      viscEf1 = viscosity+eddyVisc(idCell) 
       s11     =   grad1(1,idCell)                 ! du1/dx1                 
       s22     =   grad2(2,idCell)                 ! du2/dx2
       s12     =   grad1(2,idCell)+grad2(1,idCell) ! du1/dx2 + du2/dx1
       modS   =   2.0d0*(s11*s11+s22*s22)+s12*s12         ! S:S
-      Mp(11) =   (viscosity/specificMassA)*modS
+      Mp(11) =   viscEf1*modS
 c ......................................................................
 c
 c ... transferencia de energa da escala resolvivel para escala nao
@@ -1681,12 +1687,15 @@ c ... area
 c     area(1) = areacell(eta,acod)
 c .....................................................................
 c
+c ... sem modelo de turbulencia
+      if(lesModel .eq. 0 ) then
+        eddyVisc(idCell) = 0.0d0
 c ... smagorinsky (grad1 -> grad2; grad2 -> gradU2)
-      if(lesModel .eq. 1 .or. lesModel .eq. 0) then 
+      else if(lesModel .eq. 1) then 
 c ... |S|
         s11     =   grad1(1,idCell)                 ! du1/dx1                 
         s22     =   grad2(2,idCell)                 ! du2/dx2
-        s12     =   grad1(2,idCell)+grad2(1,idCell) ! du2/dx1 + du1/dx2
+        s12     =   grad1(2,idCell)+grad2(1,idCell) ! du1/dx2 + du2/dx1
         modS   = dsqrt(2.0d0*(s11*s11+s22*s22)+s12*s12) 
 c ... Cs*filtro
         filtro = dsqrt(area(idCell))
@@ -1695,7 +1704,7 @@ c ... near wall Van Driest
         if(wall) then
 c        lMin= min(lMin,lMin*(1.0d0-dexp(-yPlusMax/vanDriest)))
           lMin = min(vonKarman*dMin,lMin)
-          lMin = lMin*(1.0d0-dexp(-yPlusMax/vanDriest))
+          lMin = lMin*(1.0d0-dexp(-(yPlusMax/vanDriest)))
         endif
 c ... viscosidade turbulenta
         eddyVisc(idCell) = specificMassA*(lMin)*(lMin)*modS
@@ -1734,6 +1743,7 @@ c       yPlusMax = 0.0d0
         if(wall) then
 c        lMin= min(lMin,lMin*(1.0d0-dexp(-yPlusMax/vanDriest)))
           lMin = min(vonKarman*dMin,lMin)
+c         lMin = lMin*(1.0d0-dexp(-(yPlusMax/vanDriest)**3))
 c         lMin = lMin*(1.0d0-dexp(-yPlusMax/vanDriest))
         endif
 c ... viscosidade turbulenta

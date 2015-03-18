@@ -300,7 +300,7 @@ c ... posprocessamento do campo de velocidades
       return
 c .....................................................................
 c
-c ... F = fontes no volume + Vpu0 
+c ... F = fontes no volume + Vpu0/dt 
   400 continue
 c .....................................................................
 c
@@ -633,7 +633,7 @@ c ... posprocessamento do campo de velocidades
       return
 c .....................................................................
 c
-c ... F = fontes no volume + Vpu0 
+c ... F = fontes no volume + Vpu0/dt 
   400 continue
 c .....................................................................
 c

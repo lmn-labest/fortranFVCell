@@ -2,9 +2,9 @@ config
 memoria 100 openMpCell true nThreadsCell 2 openMpSolver true  nThreadsSolver 2 reord false bvtk true
 end config
 mesh
-nnode     12346 numel     12000 ndf 0 ndfF 3 ndfE 0 numat 1 maxno 4 dim 2
+nnode     26146 numel     25500 ndf 0 ndfF 3 ndfE 0 numat 1 maxno 4 dim 2
 materials
-1 75 1.0d-5  1.0d0 0.0 0.0 0.0d0 1.0d0 7
+1 75 1.0d-5  1.0d0 0.0 0.0 0.0d0 1.0d0 7  
 end materials
 insert degrau_coor.dat
 insert degrau_elem.dat
@@ -14,24 +14,25 @@ simpleC
 underP 1.0d0
 underU 1.0d0
 itSimple   100
-tSimpU1 1.0e-3 
-tSimpU2 1.0e-3
-tSimpPc 1.0e-3
+tSimpU1 1.0e-4 
+tSimpU2 1.0e-4
+tSimpPc 1.0e-4
 #tDinamic
 #bench
 les 1 4
 #------
 MeanVel
+velRsm
+velVar
 pveloc
 pEddyVis
-dt 0.0002
-loop2    200 
+dt 0.0001
+loop2   1000 
   loop1   10 
     simple
     pEstatic  
   next1
   ppres
-  pDsmago
   pyPlus
   pgradU1
   pgradU2
@@ -44,5 +45,6 @@ loop2    200
   pKeTot
   pveloc
   pEddyVis
+  save
 next2  
 stop

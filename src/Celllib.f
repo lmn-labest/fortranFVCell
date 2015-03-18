@@ -359,65 +359,6 @@ c ...
       end
 c *********************************************************************
 c
-c *********************************************************************
-c     subroutine errosol(u,error,x,ix,numel,nen,ndf,ndm,cod)
-c     implicit none
-c     logical cod
-c     real*8 u(ndf,*),error(*),du(3),f(3),dot,x(ndm,*),xc(3)
-c     integer ix(nen+1,*),numel,nen,ndf,ndm,nel,j,no,k
-c     do nel = 1, numel
-c        do k = 1, ndm
-c          xc(k) = 0.d0
-c        enddo  
-c ... calculo do centroide            
-c         do j = 1, nen
-c           no = ix(j,nel)
-c           do k = 1, ndm 
-c             xc(k) = xc(k) + x(k,no)
-c           enddo
-c         enddo
-c ... Triangulo          
-c         if( nen .eq. 3) then
-c           do j = 1, ndm 
-c             xc(j) = xc(j)/3.0d0
-c           enddo
-c         endif
-c ... Quadrilatero          
-c         if( nen .eq. 4) then
-c           do j = 1, ndm 
-c             xc(j) = xc(j)*0.25d0
-c           enddo
-c         endif  
-c .....................................................................    
-c       call exectsol(f,xc,cod)
-c       do j = 1, ndf
-c         du(j) = u(j,nel) - f(j)
-c       enddo
-c       error(nel) = dsqrt(dot(du,du,ndf))/dsqrt(dot(f,f,ndf))
-c     enddo
-c     return
-c     end
-c *********************************************************************
-c 
-c *********************************************************************
-      subroutine exectsol(f,x,cod)
-      implicit none
-      logical cod
-      real*8 x(3),f(3),a,r
-      r    = dsqrt(x(1)**2+x(2)**2)
-c ... solucao      
-      if(cod) then
-        f(1) = 500.d0/dlog(0.1d0)*dlog(r)
-c ... gradiente        
-      else
-        a    = 500.d0/dlog(0.1d0)*(1.0d0/r)
-        f(1) = a*x(1)/r
-        f(2) = a*x(2)/r
-      endif
-      return
-      end
-c *********************************************************************
-c
 c **********************************************************************
 c * LIMIT: funcao limitadora para o termo convectivo                   *
 c * -------------------------------------------------------------------*
@@ -430,6 +371,12 @@ c **********************************************************************
       implicit none
       real*8 par(*),r,a,b,c,eps
       integer icod
+      character*15 macros(7)
+      integer i,nm
+      data macros/'up             ','central        ','vanLeer TVD    '
+     .           ,'VanAlbada TVD  ','MidMod TVD     ','OSHER TVD      '
+     .           ,'SuperBee  TVD  '/
+      data nm /7/
 c ... UD - upwind de primeira ordem
       if(icod.eq.1) then
         limit = 0.0d0
@@ -498,7 +445,10 @@ c .....................................................................
 c
 c ...
       else
-        print*,'Funcao limitadora nao existente!!'
+        write(*,'(a)')'Funcao limitadora nao existente!!'
+        do i = 1, nm
+          write(*,'(i2,1x,a)')i,macros(i)
+        enddo 
         stop
       endif
 c ......................................................................
@@ -997,6 +947,7 @@ c .......................................................................
       return
       end
 c ***********************************************************************   
+c
 c **********************************************************************
 c * WALLMODEL : Modelo de parede                                       *
 c * ------------------------------------------------------------------ *
@@ -1183,7 +1134,8 @@ c
 c ......................................................................
 c
 c ...
-c      if(nel .eq. 80) print*,nel,fu,yPlus,dy
+       if(nel .eq. 80) print*,nel,fu,yPlus,dy
+       if(nel .eq. 81) print*,nel,fu,yPlus,dy
 c      print*,nel,fu
       return
       end

@@ -188,6 +188,8 @@ c ......................................................................
         StrExtensao='_pket_'//trim(StrExtensao)//'.vtk'
       elseif(code .eq. 64) then
         StrExtensao='_VelRsm.vtk'
+      elseif(code .eq. 65) then
+        StrExtensao='_VelVar.vtk'
       endif    
 c ................................................................
 c
