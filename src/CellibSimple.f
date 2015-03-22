@@ -1119,7 +1119,8 @@ c **********************************************************************
       real*8 un(ndm,5)            
       real*8 u(5),u0(5),u1(5)
       real*8 stressW(4),yPLus(4),yPLusMax
-      real*8 ca(4),alpha,k(10,*),xm(3,4)
+      real*8 alpha,teta
+      real*8 ca(4),k(10,*),xm(3,4)
       real*8 eps,cfl,re,ug(4),xcg(3,4),kf
       real*8 gradP(ndm,*),grad2(ndm,*),grad1(ndm,*)
       real*8 pf,p1,p2,pface,mKsiF(4),aNb
@@ -1346,7 +1347,7 @@ c ... interpolacao da propriedaes
 c ... viscosidade efetiva
           viscEf1= viscosity + eddyVisc(idCell)  
           viscEf2= k(1,i)    + eddyVisc(i) 
-c ... media harmonica  visosidade molevular
+c ... media harmonica  visosidade molecular
           kf    = alpha/viscEf1 + (1.0d0-alpha)/viscEf2 
           kf    = 1.0d0/kf
 c .....................................................................
@@ -1376,6 +1377,7 @@ c ... fluxo convectivo de primeira ordem
 c ... fluxo convectivo de ordem superior
 c
 c ... central-differencing scheme
+          teta = 0.75d0
           if(icod .eq. 9) then
             uc0 = u(i)      
      .          + grad1(1,i)*(xm(1,i) - xc(1,i))
@@ -1386,8 +1388,9 @@ c ... central-differencing scheme
             if(cv.lt.0.0d0) then
               cvc = u(idCell) - du
             else
-              cvc = u(i) - du
+              cvc = u(i)      - du
             endif
+          cvc = teta*cvc
 c .....................................................................
 c
 c ... interpolcao TVD
@@ -1414,7 +1417,8 @@ c .....................................................................
 c .....................................................................
 c
 c ...
-          a(i) = a(i) + max(-cv,0.0d0)
+c         a(i) = a(i) + max(-cv,0.0d0)
+          a(i)      = a(i) - min(cv,0.0d0)
           sp   = sp   + cv
           p    =  p   - cv*cvc
 c .....................................................................

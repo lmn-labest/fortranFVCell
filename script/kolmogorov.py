@@ -31,7 +31,14 @@ def main(argv):
   tau                   =  (viscosidadeCinematica/epsilon)**(1.0/2.0) 
   vel                   =   (viscosidadeCinematica*epsilon)**(1.0/4.0) 
   reynoldsKolmogorov    =   vel*neta/viscosidadeCinematica
+
+#escala dissipativa-inercial (lDI)
+  lDI  = 60.0*neta
+
+
+#
   print 'escala ener-inercial               : '     ,lEI    ,'  (m)'
+  print 'escala diss-inercial               : '     ,lDI    ,'  (m)'
   print 'escala espacial de kolmogorov      : '     ,neta   ,'  (m)'
   print 'escala temporal de kolmogorov      : '     ,tau    ,'  (s)'
   print 'escala de velocidade de kolmogorov : ',vel    ,'(m/s)'

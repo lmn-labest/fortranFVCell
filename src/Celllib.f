@@ -1134,8 +1134,8 @@ c
 c ......................................................................
 c
 c ...
-       if(nel .eq. 80) print*,nel,fu,yPlus,dy
-       if(nel .eq. 81) print*,nel,fu,yPlus,dy
+c      if(nel .eq. 80) print*,nel,fu,yPlus,dy
+c      if(nel .eq. 81) print*,nel,fu,yPlus,dy
 c      print*,nel,fu
       return
       end
